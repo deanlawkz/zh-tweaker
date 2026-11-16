@@ -43,7 +43,8 @@ export function mergeSlots(base, extras, limit) {
 const baseSide = side => (/^America/.test(side) ? 'America' : /^China|^Boss/.test(side) ? 'China' : /^GLA/.test(side) ? 'GLA' : side);
 
 function setLine(text, key, value) {
-  const re = new RegExp(`^(\\s*${key}\\s*=\\s*)[^;\\r\\n]*`, 'mi');
+  // Both "Key = value" and "Key value" (ControlBarScheme writes fields without '=').
+  const re = new RegExp(`^(\\s*${key}(?:\\s*=\\s*|[ \\t]+))[^;\\r\\n]*`, 'mi');
   if (re.test(text)) return text.replace(re, `$1${value}`);
   // insert after the header line
   const nl = text.indexOf('\n') + 1;

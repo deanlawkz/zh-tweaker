@@ -109,3 +109,10 @@ test('готовый ядерный взрыв: объект и список с�
   assert.match(blk, /OCL_NukeRadiationField/);
   assert.match(blk, /LifetimeUpdate/);
 });
+
+test('панель Commander: одна строка Side, и это Commander', { skip: !hasGame }, () => {
+  const cb = r.files.get('Data/INI/ControlBarScheme/ZHT_Commander.ini');
+  const sides = cb.split(/\r?\n/).filter(l => /^\s*Side\b/.test(l));
+  assert.equal(sides.length, 1, sides.join(' | '));
+  assert.match(sides[0], /Commander/);
+});

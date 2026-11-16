@@ -8,13 +8,16 @@ const BUILD_CMDS = /^(UNIT_BUILD|DOZER_CONSTRUCT)$/;
 const SP_MODULE = /SpecialPower|SpecialAbility/;
 export const ALL_SCIENCES = 'Upgrade_ZHT_AllSciences';
 export const INI_MAX_LINE = 1028;
+const GEN_PREFIX = /^(AirF|Lazr|SupW|Tank|Infa|Nuke|Chem|Demo|Slth|Boss|AFG)_/;
+export const stripGeneral = n => n.replace(GEN_PREFIX, '');
 const FILE = t => `Data/INI/${t}/ZHT_Commander.ini`;
 
 // Replace whole-word tokens in the value part of an "Key = value ; comment" line.
 export function remapLine(line, map) {
   const m = line.match(/^(\s*[^=;]*=)([^;\r\n]*?)(\s*(?:;.*|\/\/.*)?)(\r?\n)?$/);
   if (!m) return line;
-  const value = m[2].replace(/[A-Za-z0-9_]+/g, tok => map.get(tok) ?? tok);
+  // Tokens right after ':' are labels (DisplayName = OBJECT:X), not references.
+  const value = m[2].replace(/[A-Za-z0-9_]+/g, (tok, at, s) => (s[at - 1] === ':' ? tok : map.get(tok) ?? tok));
   return m[1] + value + m[3] + (m[4] || '');
 }
 
@@ -86,16 +89,18 @@ export function buildCommander(db, opts = { aimFix: true }) {
   };
   for (const f of factions) { visitObj(P('PlayerTemplate', f, 'StartingBuilding')); visitObj(P('PlayerTemplate', f, 'StartingUnit0')); }
 
-  // 2. Representatives: one object per (base side, kind, display name), vanilla preferred.
+  // 2. Representatives: general variants of the same object (same name after the general prefix
+  // and the same display name) collapse into one, vanilla preferred. Decoys (FakeGLA*) and
+  // differently named units stay separate.
   const groups = new Map();
   for (const o of B) {
-    const key = `${baseSide(db.side(o) || '')}|${db.kind(o)}|${db.displayName(o) || o}`;
+    const key = `${stripGeneral(o)}|${db.displayName(o) || o}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(o);
   }
   const rep = new Map();
   for (const members of groups.values()) {
-    members.sort((a, b) => (db.general(a) ? 1 : 0) - (db.general(b) ? 1 : 0) || a.localeCompare(b));
+    members.sort((a, b) => (GEN_PREFIX.test(a) ? 1 : 0) - (GEN_PREFIX.test(b) ? 1 : 0) || a.localeCompare(b));
     for (const m of members) rep.set(m, members[0]);
   }
   for (const b of BUILDERS) if (B.has(b)) rep.set(b, b);

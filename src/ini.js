@@ -104,7 +104,9 @@ const lineOf = (f, pos) => {
 
 export function setPropAt(f, prop, value) {
   const { body } = lineOf(f, prop.start);
-  const m = body.match(/^(\s*[^=]*?\s*=\s*)(.*?)(\s*(?:;|\/\/).*?)?(\r?\n)?$/s);
+  const m = body.match(/^(\s*[^=;]*?\s*=\s*)(.*?)(\s*(?:;|\/\/).*?)?(\r?\n)?$/s)
+    || body.match(/^(\s*\S+\s+)(.*?)(\s*(?:;|\/\/).*?)?(\r?\n)?$/s); // "Key value" lines without '='
+  if (!m) throw new Error(`Не удалось разобрать строку «${body.trim()}»`);
   const line = m[1] + value + (m[3] || '') + (m[4] || '');
   return splice(f, prop.start, prop.end, line);
 }

@@ -61,6 +61,7 @@ export async function refreshStatus() {
 export async function tweak(t, okMsg = 'Сохранено. Нажмите «Применить», чтобы записать в игру.') {
   const r = await api.post('/api/tweaks', t);
   await refreshStatus();
+  if (r.error) { toast(r.error, true); return r; }
   const mine = r.errors.filter(e => e.tweakId === r.tweak.id);
   if (mine.length) toast(mine[0].message, true); else toast(okMsg);
   return r;
@@ -76,6 +77,23 @@ export function closeModal() { $('#modal').hidden = true; }
 $('#modal-close').onclick = closeModal;
 $('#modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Upgrade / special power buttons with their game pictures.
+export function pickButton(title) {
+  return new Promise(resolve => {
+    const search = h('input', { type: 'text', placeholder: 'Поиск: Paradrop, Carpet, Flash…' });
+    const holder = h('div', { class: 'grid' });
+    let timer;
+    const draw = async () => {
+      const items = await api.get(`/api/buttons?q=${encodeURIComponent(search.value)}`);
+      fill(holder, items.filter(b => b.image).map(b => h('div', { class: 'tile', title: `${b.text || b.name}\n${b.name}`, onclick: () => { closeModal(); resolve(b); } },
+        h('img', { src: `/img/${encodeURIComponent(b.image)}.png`, loading: 'lazy' }), h('span', {}, b.text || b.name))));
+    };
+    search.oninput = () => { clearTimeout(timer); timer = setTimeout(draw, 200); };
+    openModal(title, h('div', {}, h('div', { class: 'filters' }, search), holder));
+    draw(); search.focus();
+  });
+}
 
 // Icon grid of Commander objects; resolves with the chosen object.
 export function pickObject(title, { kind } = {}) {
@@ -149,11 +167,13 @@ $('#btn-apply').onclick = async () => {
   const r = await api.post('/api/apply');
   await refreshStatus();
   if (r.ok) toast(`Записано в игру: ${r.written.length} файлов. Можно играть.`);
+  else if (r.error) toast(`Не применено: ${r.error}`, true);
   else { showErrors(r.errors); toast('Не применено: есть ошибки (список вверху)', true); }
 };
 $('#btn-reset').onclick = async () => {
   if (!confirm('Убрать все файлы твикера из игры? Игра станет ванильной. Список правок сохранится, его можно применить снова.')) return;
   const r = await api.post('/api/reset');
+  if (r.error) return toast(r.error, true);
   toast(r.kept?.length ? `Сброшено, но оставлены изменённые вручную: ${r.kept.join(', ')}` : 'Игра снова ванильная.');
 };
 $('#btn-play').onclick = async () => { await api.post('/api/play'); toast('Запускаю игру…'); };

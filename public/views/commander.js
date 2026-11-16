@@ -11,7 +11,7 @@ export async function renderCommander(view) {
     h('p', {}, `Юнитов: ${counts.unit}, зданий: ${counts.building}. Старт: командный центр и бульдозер США. Командный центр строит ещё бульдозер Китая и рабочего ГЛА, у каждого свои здания. Все генеральские способности открыты сразу.`),
     h('h3', {}, 'Не поместилось в наборы кнопок (лимит игры 14)'),
     s.report.overflow.length ? h('div', { class: 'list' }, s.report.overflow.map(o => h('div', { class: 'item' },
-      h('div', {}, h('b', {}, o.commandSet.replace(/^Cmdr_|_CommandSet$/g, '')), h('br'), h('small', {}, o.dropped.join(', '))))))
+      h('div', {}, h('b', {}, o.commandSet.replace(/^Cmdr_|_CommandSet$/g, '')), h('br'), h('div', { class: 'grid', style: 'margin-top:6px' }, o.dropped.map(b => h('div', { class: 'tile', title: b }, h('img', { src: `/api/button-image/${encodeURIComponent(b)}` }), h('span', {}, b.replace(/^(Cmdr_)?Command_(Build_)?/, '')))))))))
       : h('p', {}, 'Всё поместилось.'),
-    h('p', { class: 'code' }, 'Недостающее можно поставить вручную во вкладке «Что строят здания», заменив ненужные кнопки.')));
+    h('p', { class: 'code' }, 'Недостающее можно поставить вручную во вкладке «Что строят здания»: юниты и здания кнопкой «Поставить юнит/здание», способности и улучшения кнопкой «Способность или улучшение».')));
 }

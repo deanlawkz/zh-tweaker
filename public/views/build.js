@@ -1,5 +1,5 @@
 // "Что строят здания": building/builder grid + 14 slots like the game control bar.
-import { h, fill, api, state, icon, objectGrid, pickObject, openModal, closeModal, tweak } from '../app.js';
+import { h, fill, api, state, icon, objectGrid, pickObject, pickButton, openModal, closeModal, tweak } from '../app.js';
 
 export async function renderBuild(view) {
   const left = h('div', { class: 'panel' });
@@ -40,8 +40,16 @@ function slotMenu(setName, slot, cur, reload) {
     await tweak({ op: 'commandSlot', commandSet: setName, slot, button: `build:${o.name}` }, `Слот ${slot}: ${o.display}`);
     reload();
   };
+  const putButton = async () => {
+    closeModal();
+    const b = await pickButton(`Слот ${slot}: способность или улучшение`);
+    if (!b) return;
+    await tweak({ op: 'commandSlot', commandSet: setName, slot, button: b.name }, `Слот ${slot}: ${b.text || b.name}`);
+    reload();
+  };
   const clear = async () => { closeModal(); await tweak({ op: 'commandSlot', commandSet: setName, slot, button: null }, `Слот ${slot} очищен`); reload(); };
   openModal(`Слот ${slot}${cur ? ': ' + (cur.display || cur.button) : ''}`, h('div', { class: 'tools' },
     h('button', { class: 'primary', onclick: put }, cur ? 'Заменить на юнит/здание…' : 'Поставить юнит/здание…'),
+    h('button', { onclick: putButton }, 'Способность или улучшение…'),
     cur ? h('button', { class: 'danger', onclick: clear }, 'Очистить слот') : null));
 }

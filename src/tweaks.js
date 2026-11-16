@@ -1,5 +1,5 @@
 // User tweaks: stored as a list, applied on top of a freshly built Commander.
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseIni, setProp, setPropAt, removeModule, insertModule, blockText, findModule, findBlock } from './ini.js';
 import { buildCommander, PREFIX, SLOT_LIMIT, INI_MAX_LINE } from './commander.js';
@@ -11,10 +11,18 @@ const TYPE_FILE = t => `Data/INI/${t}/ZHT_Commander.ini`;
 export const GAMEDATA_FILE = 'Data/INI/GameData/ZHT_GameData.ini';
 export const CSF_FILE = 'Data/English/generals.csf';
 const SLOTS = ['PRIMARY', 'SECONDARY', 'TERTIARY'];
+const REF_TYPES = ['Object', 'Weapon', 'Locomotor', 'CommandSet', 'CommandButton', 'Upgrade'];
 
 export function loadTweaks(dir = TWEAKER_DIR) {
   const f = join(dir, 'tweaks.json');
-  return existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : [];
+  if (!existsSync(f)) return [];
+  try {
+    const list = JSON.parse(readFileSync(f, 'utf8'));
+    if (Array.isArray(list)) return list;
+  } catch { /* fall through */ }
+  // Keep the broken file for the user, start with an empty list.
+  renameSync(f, join(dir, `tweaks.broken-${Date.now()}.json`));
+  return [];
 }
 
 export function saveTweaks(list, dir = TWEAKER_DIR) {
@@ -71,9 +79,12 @@ function target(w, ref) {
   return loc;
 }
 
-let copyN = 0;
 const OPS = {
-  camera(w, t, out) { out.camera = Number(t.value); },
+  camera(w, t, out) {
+    const v = Number(t.value);
+    if (!Number.isFinite(v) || v < 100 || v > 5000) throw new Fail(`Высота камеры: «${t.value}» вне 100..5000`);
+    out.camera = v;
+  },
   aimFix() {},
   set(w, t) {
     const loc = target(w, t.block);
@@ -106,7 +117,7 @@ const OPS = {
     const m = findModule(srcLoc.block, t.module);
     if (!m) throw new Fail(`В ${from.name} нет модуля ${t.module}`);
     const loc = target(w, t.to);
-    const text = blockText(srcLoc.file, m).replace(/^(\s*\w+\s*=\s*\w+)\s+\S+/, `$1 ModuleTag_ZHT_C${++copyN}`);
+    const text = blockText(srcLoc.file, m).replace(/^(\s*\w+\s*=\s*\w+)\s+\S+/, `$1 ModuleTag_ZHT_C${t.id}`);
     w.edit(loc.path, f => insertModule(f, findBlock(f, loc.block.type, loc.block.name), text));
   },
   weaponSlot(w, t) {
@@ -158,8 +169,13 @@ const OPS = {
   raw(w, t) {
     const loc = target(w, t.block);
     const text = t.text.endsWith('\n') ? t.text : t.text + '\r\n';
-    const parsed = parseIni(text, 'raw');
+    let parsed;
+    try { parsed = parseIni(text, 'raw'); } catch (e) { throw new Fail(`Текст не разобран: ${e.message.replace(/^raw: /, '')}`); }
     if (parsed.blocks.length !== 1) throw new Fail('Текст должен содержать ровно один блок с End');
+    const b = parsed.blocks[0];
+    if (b.type !== loc.block.type || b.name !== loc.block.name) {
+      throw new Fail(`Первая строка должна остаться «${loc.block.type} ${loc.block.name}», а не «${b.type} ${b.name}»`);
+    }
     w.edit(loc.path, f => parseIni(f.text.slice(0, loc.block.start) + text + f.text.slice(loc.block.end), f.file));
   },
 };
@@ -195,6 +211,16 @@ function validate(w) {
             const name = p.value.split(/\s+/)[0];
             if (!w.exists(lab.ref, name)) err(`${b.type} ${b.name}`, p.key, `${lab.ru}: нет записи «${name}»`);
           }
+          const kl = p.key.toLowerCase();
+          if (kl === 'locomotor') {
+            for (const l of p.value.split(/\s+/).slice(1)) if (l && !w.exists('Locomotor', l)) err(`${b.type} ${b.name}`, p.key, `Ходовая: нет записи «${l}»`);
+          }
+          if (node.kind?.toLowerCase() === 'prerequisites' && kl === 'object') {
+            for (const o of p.value.split(/\s+/)) if (o && !w.exists('Object', o)) err(`${b.type} ${b.name}`, 'Prerequisites', `Требование для постройки: нет объекта «${o}»`);
+          }
+          for (const tok of p.value.match(/\bCmdr_\w+/g) || []) {
+            if (!REF_TYPES.some(rt => w.exists(rt, tok))) err(`${b.type} ${b.name}`, p.key, `Нет записи «${tok}»`);
+          }
           if (node.kind?.toLowerCase() === 'weaponset' && p.key.toLowerCase() === 'weapon') {
             const wn = p.value.split(/\s+/)[1];
             if (wn && !/^none$/i.test(wn) && !w.exists('Weapon', wn)) err(`${b.type} ${b.name}`, 'Weapon', `Оружие: нет записи «${wn}»`);
@@ -229,7 +255,6 @@ export function buildOutput(db, tweaks) {
   const cmd = buildCommander(db, { aimFix });
   const w = new Work(db, cmd.files);
   w.aimFix = aimFix;
-  copyN = 0;
   const out = { camera: null };
   const errors = [];
   const touched = new Map();
@@ -243,8 +268,7 @@ export function buildOutput(db, tweaks) {
       }
       if (t.op === 'weaponSlot' && t.weapon) touched.set(`Object ${t.object}`, t.id);
     } catch (e) {
-      if (!(e instanceof Fail)) throw e;
-      errors.push({ tweakId: t.id, message: e.message });
+      errors.push({ tweakId: t.id, message: e instanceof Fail ? e.message : `Правка не выполнена: ${e.message}` });
     }
   }
   const key = e => `${e.block}|${e.key}|${e.message}`;

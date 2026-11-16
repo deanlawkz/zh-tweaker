@@ -18,6 +18,16 @@ const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml' };
 const PORT = 4170;
 
+// Only the tweaker's own page may change things (protects against other sites in the browser).
+function sameOrigin(req) {
+  const host = req.headers.host || '';
+  if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) return false;
+  const site = req.headers['sec-fetch-site'];
+  if (site && site !== 'same-origin' && site !== 'none') return false;
+  const origin = req.headers.origin;
+  return !origin || origin === `http://${host}`;
+}
+
 // Vanilla db plus generated files layered on top.
 function overlay(db, files) {
   const v = Object.create(GameDb.prototype);
@@ -110,11 +120,28 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
         }),
       };
     },
+    'GET /api/buttons': (q) => {
+      const s = (q.get('q') || '').toLowerCase();
+      const out2 = [];
+      for (const n of view.index.CommandButton.keys()) {
+        const cmd = view.prop('CommandButton', n, 'Command') || '';
+        if (/^(UNIT_BUILD|DOZER_CONSTRUCT)$/.test(cmd)) continue;
+        const label = view.prop('CommandButton', n, 'TextLabel');
+        const text = (label && db.csf.get(label.toLowerCase())) || null;
+        if (s && !n.toLowerCase().includes(s) && !(text || '').toLowerCase().includes(s)) continue;
+        out2.push({ name: n, command: cmd, text: text ? text.replace(/&/g, '') : null, image: view.prop('CommandButton', n, 'ButtonImage'),
+          upgrade: view.prop('CommandButton', n, 'Upgrade'), power: view.prop('CommandButton', n, 'SpecialPower') });
+        if (out2.length >= 300) break;
+      }
+      return out2;
+    },
     'GET /api/tweaks': () => tweaks,
     'POST /api/tweaks': (q, _p, body) => {
       const t = { ...body, id: nextId++, createdAt: new Date().toISOString() };
+      const before = tweaks;
       tweaks = tweaks.filter(x => !sameTarget(x, t)).concat(t);
-      saveTweaks(tweaks, tweakerDir); recompute();
+      try { recompute(); } catch (e) { tweaks = before; recompute(); return [400, { error: `Правка не принята: ${e.message}` }]; }
+      saveTweaks(tweaks, tweakerDir);
       return { tweak: t, errors: out.errors };
     },
     'DELETE /api/tweaks/:id': (q, [id]) => {
@@ -145,14 +172,27 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
 
   return createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
+    if (req.method !== 'GET' && !sameOrigin(req)) {
+      res.writeHead(403, { 'content-type': 'application/json; charset=utf-8' });
+      return res.end(JSON.stringify({ error: 'Запрос с чужой страницы отклонён' }));
+    }
     try {
-      const icon = url.pathname.match(/^\/icon\/([^/]+)\/(button|portrait)\.png$/);
+      const icon = url.pathname.match(/^\/icon\/([A-Za-z0-9_]+)\/(button|portrait)\.png$/);
       if (icon) {
         const png = (await iconPng(db, vfs, decodeURIComponent(icon[1]).replace(/__.*$/, ''), icon[2]).catch(() => null)) || placeholderPng();
         res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'max-age=86400' });
         return res.end(png);
       }
-      const img = url.pathname.match(/^\/img\/([^/]+)\.png$/);
+      const bimg = url.pathname.match(/^\/api\/button-image\/([A-Za-z0-9_]+)$/);
+      if (bimg) {
+        const b = decodeURIComponent(bimg[1]);
+        const o = view.prop('CommandButton', b, 'Object');
+        const png = (o ? await iconPng(db, vfs, o.replace(/^Cmdr_/, '').replace(/__.*$/, ''), 'button').catch(() => null)
+          : (() => { try { return iconFromMappedImage(db, vfs, view.prop('CommandButton', b, 'ButtonImage') || ''); } catch { return null; } })()) || placeholderPng();
+        res.writeHead(200, { 'content-type': 'image/png' });
+        return res.end(png);
+      }
+      const img = url.pathname.match(/^\/img\/([A-Za-z0-9_]+)\.png$/);
       if (img) {
         const png = (() => { try { return iconFromMappedImage(db, vfs, decodeURIComponent(img[1])); } catch { return null; } })() || placeholderPng();
         res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'max-age=86400' });

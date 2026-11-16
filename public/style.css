@@ -94,3 +94,4 @@ textarea.raw { width: 100%; min-height: 420px; font: 13px/1.4 ui-monospace, Menl
 .wsum{color:var(--muted,#9aa4b2);font-size:13px;margin:4px 0}
 small.wsum{display:block}
 .wsum.nuke{color:#ffcc33;font-weight:600}
+.back{margin-bottom:12px}

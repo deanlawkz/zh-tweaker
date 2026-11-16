@@ -63,7 +63,7 @@ function moduleBox(obj, m, reload, info) {
       return h('div', { class: 'row' }, h('div', { class: 'lab' }, SLOT_RU[slot] || slot, h('small', {}, w), h('small', { class: 'wsum' + (info?.[w]?.nuke ? ' nuke' : '') }, weaponLine(info?.[w]))),
         h('div', { class: 'tools' },
           h('button', { onclick: async () => { const nw = await pickRef('Weapon', `${SLOT_RU[slot] || slot}: выберите оружие`); if (nw) tweak({ op: 'weaponSlot', object: obj, slot, weapon: nw }).then(reload); } }, 'Сменить'),
-          w && w.startsWith('Cmdr_') ? h('button', { onclick: () => { state.weapon = w; show('weapons'); } }, 'Настроить') : null));
+          w && w.startsWith('Cmdr_') ? h('button', { onclick: () => { state.weapon = w; state.weaponFrom = obj; state.weaponUnit = obj; show('weapons'); } }, 'Настроить') : null));
     });
     const has = s => m.props.some(p => p.key.toLowerCase() === 'weapon' && p.value.startsWith(s));
     for (const s of ['PRIMARY', 'SECONDARY']) if (!has(s)) rows.push(h('div', { class: 'row' }, h('div', { class: 'lab' }, SLOT_RU[s], h('small', {}, 'пусто')),

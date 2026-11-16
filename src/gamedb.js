@@ -3,7 +3,7 @@ import { parseIni } from './ini.js';
 import { readCsf } from './csf.js';
 
 export const TYPES = ['Object', 'Weapon', 'Locomotor', 'CommandSet', 'CommandButton', 'Upgrade', 'Science',
-  'ObjectCreationList', 'FXList', 'MappedImage', 'PlayerTemplate', 'Armor', 'SpecialPower', 'ParticleSystem'];
+  'ObjectCreationList', 'FXList', 'MappedImage', 'PlayerTemplate', 'Armor', 'SpecialPower', 'ParticleSystem', 'ControlBarScheme'];
 
 export const GENERALS = {
   AirF: 'AirForce', Lazr: 'Laser', SupW: 'SuperWeapon', Tank: 'Tank', Infa: 'Infantry', Nuke: 'Nuke',

@@ -1,5 +1,5 @@
 // "Оружие": pick a unit by icon, then edit any of its weapons.
-import { h, fill, api, state, icon, objectGrid } from '../app.js';
+import { h, fill, api, state, icon, objectGrid, tweak } from '../app.js';
 import { propRow } from './fields.js';
 
 export async function renderWeapons(view) {
@@ -21,6 +21,15 @@ async function listWeapons(box, o) {
       : h('div', { class: 'empty' }, 'Без оружия. Добавить оружие можно в карточке юнита.'));
 }
 
+const NUKE_OCL = 'OCL_Cmdr_NukeBlast';
+const num = v => (v == null ? '?' : String(v).replace(/\.0+$/, ''));
+
+// One line for cards: "урон 400 · радиус 20 · дальность 300 · ☢ ядерный взрыв".
+export function weaponLine(s) {
+  if (!s) return '';
+  return [`урон ${num(s.damage)}`, `радиус ${num(s.radius)}`, `дальность ${num(s.range)}`, s.nuke ? '☢ ядерный взрыв' : null].filter(Boolean).join(' · ');
+}
+
 export async function openWeapon(box, name) {
   state.weapon = null;
   const w = await api.get(`/api/weapon/${encodeURIComponent(name)}`);
@@ -29,6 +38,11 @@ export async function openWeapon(box, name) {
   const known = w.props.filter(p => p.label), other = w.props.filter(p => !p.label);
   fill(box, 
     h('div', { class: 'card-head' }, w.users?.[0] ? h('img', { src: icon(w.users[0], 'portrait') }) : null, h('div', {}, h('h2', {}, name), h('div', { class: 'code' }, w.users?.length ? 'У: ' + w.users.join(', ') : ''))),
+    h('div', { class: 'wsum' + (w.summary?.nuke ? ' nuke' : '') }, weaponLine(w.summary)),
+    name.startsWith('Cmdr_') ? h('div', { class: 'tools', style: 'margin:8px 0 12px' },
+      w.summary?.nuke
+        ? h('button', { onclick: () => tweak({ op: 'set', block: `Weapon:${name}`, key: 'ProjectileDetonationOCL', value: 'None' }, 'Ядерный взрыв убран. Нажмите «Применить».').then(reload) }, 'Убрать ядерный взрыв')
+        : h('button', { class: 'primary', onclick: () => tweak({ op: 'set', block: `Weapon:${name}`, key: 'ProjectileDetonationOCL', value: NUKE_OCL }, 'Теперь при попадании ядерный взрыв, как у ракетной шахты. Нажмите «Применить».').then(reload) }, '☢ Ядерный взрыв при попадании')) : null,
     name.startsWith('Cmdr_') ? null : h('div', { class: 'errors' }, 'Это ванильное оружие, его менять нельзя. Сначала поставьте его юниту Commander (карточка юнита → «Сменить»).'),
     h('details', { class: 'module known', open: true }, h('summary', {}, 'Главное'), h('div', { class: 'rows' }, known.map(p => propRow(owner, p, reload)))),
     h('details', { class: 'module' }, h('summary', {}, 'Прочие параметры'), h('div', { class: 'rows' }, other.map(p => propRow(owner, p, reload)))));

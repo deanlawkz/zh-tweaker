@@ -1,6 +1,7 @@
 // "Юниты и здания": icon grid + full object card.
 import { h, fill, api, state, icon, objectGrid, pickObject, pickRef, openModal, closeModal, tweak, toast, show, SIDES } from '../app.js';
 import { propRow } from './fields.js';
+import { weaponLine } from './weapons.js';
 
 const SLOT_RU = { PRIMARY: 'Основное оружие', SECONDARY: 'Дополнительное оружие', TERTIARY: 'Третье оружие' };
 const filt = { side: null, kind: null, q: '' };
@@ -42,7 +43,7 @@ export async function openCard(box, name) {
   const misc = other.length ? h('details', { class: 'module' }, h('summary', {}, h('span', { class: 'grow' }, 'Прочие параметры'), h('span', { class: 'cls' }, other.length)),
     h('div', { class: 'rows' }, other.map(p => propRow(owner, p, reload)))) : null;
 
-  const mods = [...o.modules].sort((a, b) => rank(a) - rank(b)).map(m => moduleBox(name, m, reload));
+  const mods = [...o.modules].sort((a, b) => rank(a) - rank(b)).map(m => moduleBox(name, m, reload, o.weaponInfo));
   fill(box, 
     h('div', { class: 'card-head' }, h('img', { src: icon(name, 'portrait') }),
       h('div', {}, h('h2', {}, o.display), h('div', { class: 'code' }, name))),
@@ -51,7 +52,7 @@ export async function openCard(box, name) {
 
 const rank = m => (m.kind === 'WeaponSet' ? 0 : m.label && !/Draw/.test(m.className || '') ? 1 : /Draw/.test(m.className || m.kind) ? 3 : 2);
 
-function moduleBox(obj, m, reload) {
+function moduleBox(obj, m, reload, info) {
   const title = m.label || m.className || m.kind;
   const owner = { block: `Object:${obj}`, module: m.tag };
   let rows;
@@ -59,7 +60,7 @@ function moduleBox(obj, m, reload) {
     rows = m.props.map(p => {
       if (p.key.toLowerCase() !== 'weapon') return h('div', { class: 'row' }, h('div', { class: 'lab' }, p.key), h('div', { class: 'code' }, p.value));
       const [slot, w] = p.value.split(/\s+/);
-      return h('div', { class: 'row' }, h('div', { class: 'lab' }, SLOT_RU[slot] || slot, h('small', {}, w)),
+      return h('div', { class: 'row' }, h('div', { class: 'lab' }, SLOT_RU[slot] || slot, h('small', {}, w), h('small', { class: 'wsum' + (info?.[w]?.nuke ? ' nuke' : '') }, weaponLine(info?.[w]))),
         h('div', { class: 'tools' },
           h('button', { onclick: async () => { const nw = await pickRef('Weapon', `${SLOT_RU[slot] || slot}: выберите оружие`); if (nw) tweak({ op: 'weaponSlot', object: obj, slot, weapon: nw }).then(reload); } }, 'Сменить'),
           w && w.startsWith('Cmdr_') ? h('button', { onclick: () => { state.weapon = w; show('weapons'); } }, 'Настроить') : null));

@@ -97,3 +97,15 @@ test('все генеральские способности выдаются к
   assert.equal(granted.length, db.index.Science.size);
   assert.ok(db2.get('Upgrade', 'Upgrade_ZHT_AllSciences'));
 });
+
+test('готовый ядерный взрыв: объект и список создания, как у ракетной шахты', { skip: !hasGame }, () => {
+  const obj = r.files.get('Data/INI/Object/ZHT_Commander.ini');
+  const ocl = r.files.get('Data/INI/ObjectCreationList/ZHT_Commander.ini');
+  assert.ok(ocl, 'нет файла ObjectCreationList');
+  assert.match(ocl, /ObjectCreationList OCL_Cmdr_NukeBlast[\s\S]*ObjectNames\s*=\s*Cmdr_NukeBlast/);
+  const blk = obj.slice(obj.indexOf('Object Cmdr_NukeBlast'));
+  assert.match(blk, /NeutronMissileSlowDeathBehavior/);
+  assert.match(blk, /Blast6MaxDamage\s*=\s*3500/);
+  assert.match(blk, /OCL_NukeRadiationField/);
+  assert.match(blk, /LifetimeUpdate/);
+});

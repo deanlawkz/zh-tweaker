@@ -8,6 +8,8 @@ const BUILD_CMDS = /^(UNIT_BUILD|DOZER_CONSTRUCT)$/;
 const SP_MODULE = /SpecialPower|SpecialAbility/;
 export const ALL_SCIENCES = 'Upgrade_ZHT_AllSciences';
 export const INI_MAX_LINE = 1028;
+export const NUKE_OBJECT = 'Cmdr_NukeBlast';
+export const NUKE_OCL = 'OCL_Cmdr_NukeBlast';
 const GEN_PREFIX = /^(AirF|Lazr|SupW|Tank|Infa|Nuke|Chem|Demo|Slth|Boss|AFG)_/;
 export const stripGeneral = n => n.replace(GEN_PREFIX, '');
 const FILE = t => `Data/INI/${t}/ZHT_Commander.ini`;
@@ -128,7 +130,7 @@ export function buildCommander(db, opts = { aimFix: true }) {
 
   // 4. Command sets and buttons.
   const report = { cloned: 0, overflow: [] };
-  const out = { Object: [], Weapon: [], Locomotor: [], CommandSet: [], CommandButton: [], PlayerTemplate: [], ControlBarScheme: [], Upgrade: [] };
+  const out = { Object: [], Weapon: [], Locomotor: [], CommandSet: [], CommandButton: [], PlayerTemplate: [], ControlBarScheme: [], Upgrade: [], ObjectCreationList: [] };
   const newButtons = new Map(); // target object -> button name
   const buildButton = (srcBtn, target) => {
     if (newButtons.has(target)) return newButtons.get(target);
@@ -249,6 +251,21 @@ export function buildCommander(db, opts = { aimFix: true }) {
   for (const l of locos) {
     const e = db.get('Locomotor', l);
     out.Locomotor.push(blockText(db.files.get(e.file), e.block).replace(/^(\s*Locomotor\s+)\S+/, `$1${PREFIX}${l}`));
+  }
+
+  // 6b. Ready nuclear blast (the same death module as the nuclear silo missile). Any Commander weapon can use it:
+  // "Создаёт при взрыве снаряда" = OCL_Cmdr_NukeBlast.
+  const nm = db.get('Object', 'NeutronMissile');
+  const nukeDeath = nm?.block.modules.find(m => m.className === 'NeutronMissileSlowDeathBehavior');
+  if (nukeDeath) {
+    out.Object.push([`Object ${NUKE_OBJECT}`, '  DisplayName = OBJECT:NeutronMissile', '  EditorSorting = SYSTEM',
+      '  KindOf = NO_COLLIDE IMMOBILE UNATTACKABLE', '  VisionRange = 300.0', '  ShroudClearingRange = 300.0',
+      '  Body = ActiveBody ModuleTag_01', '    MaxHealth = 1.0', '    InitialHealth = 1.0', '  End',
+      '  Behavior = LifetimeUpdate ModuleTag_02', '    MinLifetime = 0', '    MaxLifetime = 0', '  End',
+      blockText(db.files.get(nm.file), nukeDeath).replace(/\r?\n$/, ''),
+      '  Geometry = CYLINDER', '  GeometryIsSmall = Yes', '  GeometryMajorRadius = 7.0', '  GeometryHeight = 60.0', 'End', ''].join(eol));
+    out.ObjectCreationList.push([`ObjectCreationList ${NUKE_OCL}`, '  CreateObject', `    ObjectNames = ${NUKE_OBJECT}`,
+      '    Disposition = ON_GROUND_ALIGNED', '  End', 'End', ''].join(eol));
   }
 
   // 7. Faction, control bar, strings.

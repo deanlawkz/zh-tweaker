@@ -90,3 +90,14 @@ test('двойное применение идемпотентно; сброс �
   assert.ok(existsSync(join(game, 'Data/English/generals.csf')) === false);
   assert.deepEqual(res.kept, []);
 });
+
+test('Аврора: ядерный взрыв при попадании собирается без ошибок', { skip: !hasGame }, () => {
+  const o = buildOutput(db, [
+    { id: 1, op: 'weaponSlot', object: 'Cmdr_AmericaJetAurora', slot: 'PRIMARY', weapon: 'AuroraBombWeapon' },
+    { id: 2, op: 'set', block: 'Weapon:Cmdr_AuroraBombWeapon__AmericaJetAurora', key: 'ProjectileDetonationOCL', value: 'OCL_Cmdr_NukeBlast' },
+  ]);
+  assert.deepEqual(o.errors, []);
+  const wt = o.files.get('Data/INI/Weapon/ZHT_Commander.ini');
+  assert.match(blockOf(wt, 'Weapon Cmdr_AuroraBombWeapon__AmericaJetAurora'), /ProjectileDetonationOCL = OCL_Cmdr_NukeBlast/);
+  assert.match(blockOf(wt, 'Weapon Cmdr_AuroraBombWeapon__AmericaJetAurora'), /ProjectileObject\s*=\s*AuroraBomb\b/);
+});

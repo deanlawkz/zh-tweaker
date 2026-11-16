@@ -1,4 +1,5 @@
 // HTTP API and static UI on 127.0.0.1:4170.
+import { NUKE_OCL } from './commander.js';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
@@ -41,6 +42,14 @@ function overlay(db, files) {
 
 const baseOf = n => (n.startsWith(PREFIX) ? n.slice(PREFIX.length).replace(/__.*$/, '') : n);
 const baseSide = s => (/^America/.test(s) ? 'America' : /^China|^Boss/.test(s) ? 'China' : /^GLA/.test(s) ? 'GLA' : s || 'Other');
+
+// Short weapon summary for the cards: damage, radius, projectile, nuclear blast.
+export function weaponSummary(view, name) {
+  const P = k => view.prop('Weapon', name, k);
+  const ocl = [P('ProjectileDetonationOCL'), P('FireOCL')].filter(Boolean).join(' ');
+  return { damage: P('PrimaryDamage'), radius: P('PrimaryDamageRadius'), range: P('AttackRange'),
+    projectile: P('ProjectileObject'), ocl: ocl || null, nuke: ocl.includes(NUKE_OCL) };
+}
 
 function describe(view, entry) {
   const props = (node, cls) => node.props.map(p => ({ key: p.key, value: p.value, label: labelFor(cls, p.key) }));
@@ -88,12 +97,14 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
       const e = view.get('Object', name);
       if (!e) return [404, { error: `Нет объекта ${name}` }];
       const base = baseOf(name);
-      return { ...describe(view, e), display: db.displayName(base) || base, base, weapons: view.weaponsOf(name), kind: db.kind(base) };
+      const weapons = view.weaponsOf(name);
+      return { ...describe(view, e), display: db.displayName(base) || base, base, weapons, kind: db.kind(base),
+        weaponInfo: Object.fromEntries(weapons.map(w => [w, weaponSummary(view, w)])) };
     },
     'GET /api/weapon/:name': (q, [name]) => {
       const e = view.get('Weapon', name);
       if (!e) return [404, { error: `Нет оружия ${name}` }];
-      return { ...describe(view, e), users: view.usersOfWeapon ? [...view.index.Object.keys()].filter(o => view.weaponsOf(o).includes(name)) : [] };
+      return { ...describe(view, e), summary: weaponSummary(view, name), users: view.usersOfWeapon ? [...view.index.Object.keys()].filter(o => view.weaponsOf(o).includes(name)) : [] };
     },
     'GET /api/refs/:type': (q, [type]) => {
       const idx = view.index[type];

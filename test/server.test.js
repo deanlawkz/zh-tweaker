@@ -74,3 +74,8 @@ test('набор кнопок и справочники', { skip: !hasGame }, as
   const w = (await get('/api/refs/Weapon?q=neutron')).body;
   assert.ok(w.some(x => x.name === 'NeutronMissileWeapon'));
 });
+
+test('картинка кнопки улучшения по имени', { skip: !hasGame }, async () => {
+  const r = await get('/img/SAHummer.png');
+  assert.equal(r.type, 'image/png'); assert.equal(r.body.readUInt32BE(16), 60);
+});

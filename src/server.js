@@ -9,7 +9,7 @@ import { GameDb, loadGameDb } from './gamedb.js';
 import { parseIni, blockText } from './ini.js';
 import { buildOutput, loadTweaks, saveTweaks } from './tweaks.js';
 import { applyOutput, resetOutput } from './output.js';
-import { iconPng, placeholderPng } from './icons.js';
+import { iconPng, placeholderPng, iconFromMappedImage } from './icons.js';
 import { labelFor, moduleLabel } from './labels.js';
 import { PREFIX } from './commander.js';
 import { GAME_ZH, GAME_GEN, TWEAKER_DIR } from './paths.js';
@@ -149,6 +149,12 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
       const icon = url.pathname.match(/^\/icon\/([^/]+)\/(button|portrait)\.png$/);
       if (icon) {
         const png = (await iconPng(db, vfs, decodeURIComponent(icon[1]).replace(/__.*$/, ''), icon[2]).catch(() => null)) || placeholderPng();
+        res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'max-age=86400' });
+        return res.end(png);
+      }
+      const img = url.pathname.match(/^\/img\/([^/]+)\.png$/);
+      if (img) {
+        const png = (() => { try { return iconFromMappedImage(db, vfs, decodeURIComponent(img[1])); } catch { return null; } })() || placeholderPng();
         res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'max-age=86400' });
         return res.end(png);
       }

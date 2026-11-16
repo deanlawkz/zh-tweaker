@@ -1,0 +1,106 @@
+// "Юниты и здания": icon grid + full object card.
+import { h, fill, api, state, icon, objectGrid, pickObject, pickRef, openModal, closeModal, tweak, toast, show, SIDES } from '../app.js';
+import { propRow } from './fields.js';
+
+const SLOT_RU = { PRIMARY: 'Основное оружие', SECONDARY: 'Дополнительное оружие', TERTIARY: 'Третье оружие' };
+const filt = { side: null, kind: null, q: '' };
+
+export async function renderUnits(view) {
+  const left = h('div', { class: 'panel' });
+  const right = h('div', { class: 'panel sticky' }, h('div', { class: 'empty' }, 'Выберите юнит или здание слева'));
+  fill(view, h('div', { class: 'split' }, left, right));
+
+  const search = h('input', { type: 'text', placeholder: 'Поиск: Humvee, Aurora, Barracks…', value: filt.q });
+  const btn = (label, key, val) => h('button', { class: filt[key] === val ? 'on' : '', onclick: () => { filt[key] = filt[key] === val ? null : val; drawLeft(); } }, label);
+  const drawLeft = () => {
+    const list = state.objects.filter(o => (!filt.side || o.side === filt.side) && (!filt.kind || o.kind === filt.kind)
+      && (!filt.q || o.display.toLowerCase().includes(filt.q) || o.name.toLowerCase().includes(filt.q)));
+    fill(left, 
+      h('div', { class: 'filters' }, ...Object.entries(SIDES).filter(([k]) => k !== 'Other').map(([k, v]) => btn(v, 'side', k)),
+        btn('Юниты', 'kind', 'unit'), btn('Здания', 'kind', 'building')),
+      h('div', { class: 'filters' }, search),
+      objectGrid(list, o => { state.selected = o.name; drawLeft(); openCard(right, o.name); }, state.selected));
+  };
+  search.oninput = () => { filt.q = search.value.toLowerCase(); drawLeft(); search.focus(); };
+  drawLeft();
+  if (state.selected) openCard(right, state.selected);
+}
+
+export async function openCard(box, name) {
+  const o = await api.get(`/api/object/${encodeURIComponent(name)}`);
+  const reload = () => openCard(box, name);
+  const owner = { block: `Object:${name}` };
+
+  const tools = h('div', { class: 'tools' },
+    h('button', { onclick: () => takeFromOther(name, reload) }, '＋ Взять у другого'),
+    h('button', { onclick: () => rawEdit(o, reload) }, 'Текст целиком'));
+
+  const known = o.props.filter(p => p.label);
+  const other = o.props.filter(p => !p.label);
+  const main = h('details', { class: 'module known', open: true }, h('summary', {}, h('span', { class: 'grow' }, 'Главное')),
+    h('div', { class: 'rows' }, known.map(p => propRow(owner, p, reload))));
+  const misc = other.length ? h('details', { class: 'module' }, h('summary', {}, h('span', { class: 'grow' }, 'Прочие параметры'), h('span', { class: 'cls' }, other.length)),
+    h('div', { class: 'rows' }, other.map(p => propRow(owner, p, reload)))) : null;
+
+  const mods = [...o.modules].sort((a, b) => rank(a) - rank(b)).map(m => moduleBox(name, m, reload));
+  fill(box, 
+    h('div', { class: 'card-head' }, h('img', { src: icon(name, 'portrait') }),
+      h('div', {}, h('h2', {}, o.display), h('div', { class: 'code' }, name))),
+    tools, main, misc, ...mods);
+}
+
+const rank = m => (m.kind === 'WeaponSet' ? 0 : m.label && !/Draw/.test(m.className || '') ? 1 : /Draw/.test(m.className || m.kind) ? 3 : 2);
+
+function moduleBox(obj, m, reload) {
+  const title = m.label || m.className || m.kind;
+  const owner = { block: `Object:${obj}`, module: m.tag };
+  let rows;
+  if (m.kind === 'WeaponSet') {
+    rows = m.props.map(p => {
+      if (p.key.toLowerCase() !== 'weapon') return h('div', { class: 'row' }, h('div', { class: 'lab' }, p.key), h('div', { class: 'code' }, p.value));
+      const [slot, w] = p.value.split(/\s+/);
+      return h('div', { class: 'row' }, h('div', { class: 'lab' }, SLOT_RU[slot] || slot, h('small', {}, w)),
+        h('div', { class: 'tools' },
+          h('button', { onclick: async () => { const nw = await pickRef('Weapon', `${SLOT_RU[slot] || slot}: выберите оружие`); if (nw) tweak({ op: 'weaponSlot', object: obj, slot, weapon: nw }).then(reload); } }, 'Сменить'),
+          w && w.startsWith('Cmdr_') ? h('button', { onclick: () => { state.weapon = w; show('weapons'); } }, 'Настроить') : null));
+    });
+    const has = s => m.props.some(p => p.key.toLowerCase() === 'weapon' && p.value.startsWith(s));
+    for (const s of ['PRIMARY', 'SECONDARY']) if (!has(s)) rows.push(h('div', { class: 'row' }, h('div', { class: 'lab' }, SLOT_RU[s], h('small', {}, 'пусто')),
+      h('button', { onclick: async () => { const nw = await pickRef('Weapon', `${SLOT_RU[s]}: выберите оружие`); if (nw) tweak({ op: 'weaponSlot', object: obj, slot: s, weapon: nw }).then(reload); } }, 'Добавить')));
+    const cond = m.props.find(p => p.key === 'Conditions')?.value;
+    return h('details', { class: 'module known', open: true }, h('summary', {}, h('span', { class: 'grow' }, 'Оружие', cond && cond !== 'None' ? ` (когда: ${cond})` : '')), h('div', { class: 'rows' }, rows));
+  }
+  if (!m.tag) {
+    return h('details', { class: 'module' }, h('summary', {}, h('span', { class: 'grow' }, title), h('span', { class: 'cls' }, m.kind)),
+      h('div', { class: 'rows' }, m.props.map(p => h('div', { class: 'row' }, h('div', { class: 'lab' }, p.label?.ru || p.key, h('small', {}, p.key)), h('div', { class: 'code' }, p.value))),
+        h('div', { class: 'code' }, 'Этот блок правится через «Текст целиком».')));
+  }
+  return h('details', { class: 'module' + (m.label ? ' known' : ''), open: !!m.props.some(p => p.label) && !/Draw/.test(m.className) },
+    h('summary', {}, h('span', { class: 'grow' }, title), h('span', { class: 'cls' }, `${m.className} · ${m.tag}`),
+      h('button', { class: 'small danger', title: 'Удалить модуль', onclick: e => { e.preventDefault(); if (confirm(`Удалить «${title}» у этого объекта?`)) tweak({ op: 'removeModule', block: `Object:${obj}`, module: m.tag }).then(reload); } }, '✕')),
+    h('div', { class: 'rows' }, m.props.map(p => propRow(owner, p, reload)),
+      m.modules.length ? h('div', { class: 'code' }, `Вложенных блоков: ${m.modules.length} (правятся через «Текст целиком»)`) : null));
+}
+
+async function takeFromOther(target, reload) {
+  const src = await pickObject('Взять модуль: у кого?');
+  if (!src) return;
+  const o = await api.get(`/api/object/${encodeURIComponent(src.name)}`);
+  const list = h('div', { class: 'list' }, o.modules.filter(m => m.tag).map(m => h('div', {
+    class: 'item', onclick: async () => {
+      closeModal();
+      await tweak({ op: 'copyModule', from: `Object:${src.name}`, module: m.tag, to: `Object:${target}` }, `Добавлено: ${m.label || m.className}`);
+      reload();
+    },
+  }, h('div', {}, m.label || m.className, h('br'), h('small', {}, `${m.className} · ${m.props.slice(0, 3).map(p => `${p.key}=${p.value}`).join(', ')}`)))));
+  openModal(`Что взять у «${src.display}»?`, list);
+}
+
+function rawEdit(o, reload) {
+  const ta = h('textarea', { class: 'raw' });
+  ta.value = o.text;
+  openModal(`Текст: ${o.name}`, h('div', {}, ta, h('div', { class: 'tools' },
+    h('button', { class: 'primary', onclick: async () => { closeModal(); await tweak({ op: 'raw', block: `Object:${o.name}`, text: ta.value }); reload(); } }, 'Сохранить'),
+    h('span', { class: 'code' }, 'Первая строка должна остаться «Object ' + o.name + '», последняя «End».'))));
+}
+void toast;

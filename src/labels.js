@@ -51,6 +51,8 @@ export const FIELD_LABELS = {
   'HelixContain.Slots': n('Мест для пассажиров', 0, 40),
   'HelixContain.PassengersAllowedToFire': b('Пассажиры стреляют изнутри'),
   'GarrisonContain.ContainMax': n('Мест в гарнизоне', 0, 40),
+  'GarrisonContain.DamagePercentToUnits': t('Урон гарнизону, когда здание разрушено'),
+  'GarrisonContain.IsEnclosingContainer': b('Солдаты укрыты внутри: их не видно и по ним нельзя стрелять'),
   'TunnelContain.TimeForFullHeal': n('Полное лечение внутри, мс', 0, 600000),
   // Production / power
   'ProductionUpdate.MaxQueueEntries': n('Очередь производства', 1, 50),

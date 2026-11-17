@@ -84,7 +84,7 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
   play ||= () => spawn('open', ['-a', '/Applications/GeneralsXZH.app'], { detached: true, stdio: 'ignore' }).unref();
 
   const sameTarget = (a, b) => a.op === b.op && (
-    ['camera', 'aimFix'].includes(a.op) ||
+    ['camera', 'aimFix', 'battleFx'].includes(a.op) ||
     (a.op === 'set' && a.block === b.block && (a.module || '') === (b.module || '') && a.key === b.key) ||
     (a.op === 'weaponSlot' && a.object === b.object && a.slot === b.slot) ||
     (a.op === 'commandSlot' && a.commandSet === b.commandSet && +a.slot === +b.slot) ||

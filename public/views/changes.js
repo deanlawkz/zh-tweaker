@@ -3,6 +3,7 @@ import { h, fill, api, refreshStatus, toast } from '../app.js';
 
 const describe = t => ({
   camera: () => `Камера: высота ${t.value}`,
+  battleFx: () => `Дым и звук в больших боях: ${t.on ? 'включены' : 'выключены'}`,
   aimFix: () => `Стрельба изнутри во все стороны: ${t.on ? 'включена' : 'выключена'}`,
   set: () => `${t.block.split(':')[1]}${t.module ? ' · ' + t.module : ''}: ${t.key} = ${t.value}`,
   removeModule: () => `${t.block.split(':')[1]}: удалён модуль ${t.module}`,

@@ -86,6 +86,7 @@ const OPS = {
     out.camera = v;
   },
   aimFix() {},
+  battleFx() {},
   set(w, t) {
     const loc = target(w, t.block);
     let owner = loc.block;
@@ -255,6 +256,15 @@ function baselineErrors(db) {
 
 // Files under "@user/" go to the GeneralsX settings folder (USER_DIR), not the game folder.
 export const SAGE_FILE = '@user/SagePatch.ini';
+export const GAMELOD_FILE = 'Data/INI/GameLOD/ZHT_GameLOD.ini';
+
+// Big battles (8 armies) hit the stock limits: 3000 particles and 24 world sounds at "High",
+// and when FPS drops the game stops drawing weapon trails. Missiles then fly as black dots with no sound.
+// The engine reads Data/INI/GameLOD/ after GameLOD.ini; a block with the same name updates only the listed fields.
+export const BATTLE_FX_LOD = [
+  'StaticGameLOD = High', '  MaxParticleCount = 12000', '  SampleCount2D = 12', '  SampleCount3D = 64', 'End',
+  'DynamicGameLOD = Medium', '  MinParticlePriority = WEAPON_TRAIL', '  ParticleSkipMask = 0', 'End',
+  'DynamicGameLOD = Low', '  MinParticlePriority = WEAPON_TRAIL', '  ParticleSkipMask = 1', 'End', ''].join('\r\n');
 
 // Sets MaxCameraHeight in SagePatch.ini text, keeping everything else.
 export function patchCamera(text, value) {
@@ -295,6 +305,8 @@ export function buildOutput(db, tweaks, { sagePatch = null } = {}) {
     files.set(GAMEDATA_FILE, `GameData\r\n  MaxCameraHeight = ${out.camera.toFixed(1)}\r\nEnd\r\n`);
     files.set(SAGE_FILE, patchCamera(sagePatch, out.camera));
   }
+  const fxT = [...tweaks].reverse().find(t => t.op === 'battleFx');
+  if (fxT ? fxT.on : true) files.set(GAMELOD_FILE, BATTLE_FX_LOD);
   if (db.csfRaw) files.set(CSF_FILE, writeCsf(db.csfRaw, cmd.csfAdd));
   return { files, errors, report: cmd.report };
 }

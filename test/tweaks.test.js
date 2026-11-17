@@ -112,3 +112,13 @@ test('пушка танка на вертолёте: снят предел уг�
   assert.doesNotMatch(blockOf(wt, 'Weapon Cmdr_OverlordTankGun__AirF_AmericaVehicleChinook'), /^\s*M(in|ax)TargetPitch/m);
   assert.match(blockOf(wt, 'Weapon Cmdr_OverlordTankGun__AmericaVehicleHumvee'), /^\s*MinTargetPitch/m);
 });
+
+test('дым и звук в больших боях: лимиты частиц и звуков подняты, следы ракет не выключаются', { skip: !hasGame }, () => {
+  const lod = buildOutput(db, []).files.get('Data/INI/GameLOD/ZHT_GameLOD.ini');
+  assert.ok(lod, 'нет файла GameLOD');
+  const high = blockOf(lod, 'StaticGameLOD = High');
+  assert.ok(Number(high.match(/MaxParticleCount\s*=\s*(\d+)/)[1]) >= 10000);
+  assert.ok(Number(high.match(/SampleCount3D\s*=\s*(\d+)/)[1]) >= 64);
+  for (const lvl of ['Medium', 'Low']) assert.match(blockOf(lod, `DynamicGameLOD = ${lvl}`), /MinParticlePriority\s*=\s*WEAPON_TRAIL/);
+  assert.ok(!buildOutput(db, [{ id: 1, op: 'battleFx', on: false }]).files.has('Data/INI/GameLOD/ZHT_GameLOD.ini'));
+});

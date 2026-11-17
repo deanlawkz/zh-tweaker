@@ -13,7 +13,7 @@ before(async () => {
   if (!hasGame) return;
   const vfs = await Vfs.open([GAME_ZH, GAME_GEN]);
   game = tmp(); dir = tmp();
-  srv = await createApp({ vfs, db: await loadGameDb(vfs), gameDir: game, tweakerDir: dir, play: () => {} });
+  srv = await createApp({ vfs, db: await loadGameDb(vfs), gameDir: game, tweakerDir: dir, userDir: dir, play: () => {} });
   await new Promise(r => srv.listen(0, '127.0.0.1', r));
   base = `http://127.0.0.1:${srv.address().port}`;
 });

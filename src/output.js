@@ -4,11 +4,13 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync, readdirSync, rmdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { GAME_ZH, TWEAKER_DIR } from './paths.js';
+import { GAME_ZH, TWEAKER_DIR, USER_DIR } from './paths.js';
 
 const sha1 = b => createHash('sha1').update(b).digest('hex');
 const manifestPath = dir => join(dir, 'manifest.json');
 const BACKUP = '.zht-backup';
+const USER = '@user/';
+const target = (gameDir, userDir, rel) => (rel.startsWith(USER) ? join(userDir, rel.slice(USER.length)) : join(gameDir, rel));
 
 function readManifest(dir) {
   const p = manifestPath(dir);
@@ -28,11 +30,11 @@ function pruneEmptyDirs(gameDir, rel) {
   }
 }
 
-export async function resetOutput({ gameDir = GAME_ZH, tweakerDir = TWEAKER_DIR } = {}) {
+export async function resetOutput({ gameDir = GAME_ZH, tweakerDir = TWEAKER_DIR, userDir = USER_DIR } = {}) {
   const m = readManifest(tweakerDir);
   const removed = [], kept = [];
   for (const { path, sha1: h, backup } of m.files) {
-    const f = join(gameDir, path);
+    const f = target(gameDir, userDir, path);
     if (existsSync(f)) {
       if (sha1(readFileSync(f)) !== h) { kept.push(path); continue; }
       rmSync(f);
@@ -45,12 +47,12 @@ export async function resetOutput({ gameDir = GAME_ZH, tweakerDir = TWEAKER_DIR 
   return { removed, kept };
 }
 
-export async function applyOutput(files, { gameDir = GAME_ZH, tweakerDir = TWEAKER_DIR } = {}) {
+export async function applyOutput(files, { gameDir = GAME_ZH, tweakerDir = TWEAKER_DIR, userDir = USER_DIR } = {}) {
   const prev = new Map(readManifest(tweakerDir).files.map(x => [x.path, x]));
   const written = [];
   for (const [path, content] of files) {
     const buf = Buffer.isBuffer(content) ? content : Buffer.from(content, 'latin1');
-    const f = join(gameDir, path);
+    const f = target(gameDir, userDir, path);
     mkdirSync(dirname(f), { recursive: true });
     let backup = prev.get(path)?.backup || false;
     if (!prev.has(path) && existsSync(f) && !existsSync(f + BACKUP)) { renameSync(f, f + BACKUP); backup = true; }
@@ -61,7 +63,7 @@ export async function applyOutput(files, { gameDir = GAME_ZH, tweakerDir = TWEAK
   // Files from the previous apply that are no longer produced.
   for (const [path, x] of prev) {
     if (files.has(path)) continue;
-    const f = join(gameDir, path);
+    const f = target(gameDir, userDir, path);
     if (existsSync(f) && sha1(readFileSync(f)) === x.sha1) rmSync(f);
     if (x.backup && existsSync(f + BACKUP)) renameSync(f + BACKUP, f);
     else pruneEmptyDirs(gameDir, path);

@@ -249,7 +249,18 @@ function baselineErrors(db) {
   return baselineCache.get(db);
 }
 
-export function buildOutput(db, tweaks) {
+// Files under "@user/" go to the GeneralsX settings folder (USER_DIR), not the game folder.
+export const SAGE_FILE = '@user/SagePatch.ini';
+
+// Sets MaxCameraHeight in SagePatch.ini text, keeping everything else.
+export function patchCamera(text, value) {
+  const v = Number(value).toFixed(1);
+  if (!text) return `GameData\r\n  MaxCameraHeight = ${v}\r\nEnd\r\n`;
+  if (/^\s*MaxCameraHeight\s*=/mi.test(text)) return text.replace(/^(\s*MaxCameraHeight\s*=\s*)[^;\r\n]*/mi, `$1${v}`);
+  return text.replace(/^End\b/m, `  MaxCameraHeight = ${v}\r\nEnd`);
+}
+
+export function buildOutput(db, tweaks, { sagePatch = null } = {}) {
   const aimFixT = [...tweaks].reverse().find(t => t.op === 'aimFix');
   const aimFix = aimFixT ? !!aimFixT.on : true;
   const cmd = buildCommander(db, { aimFix });
@@ -278,6 +289,7 @@ export function buildOutput(db, tweaks) {
   const files = new Map([...w.files].map(([p, f]) => [p, f.toString()]));
   if (out.camera != null && Number.isFinite(out.camera)) {
     files.set(GAMEDATA_FILE, `GameData\r\n  MaxCameraHeight = ${out.camera.toFixed(1)}\r\nEnd\r\n`);
+    files.set(SAGE_FILE, patchCamera(sagePatch, out.camera));
   }
   if (db.csfRaw) files.set(CSF_FILE, writeCsf(db.csfRaw, cmd.csfAdd));
   return { files, errors, report: cmd.report };

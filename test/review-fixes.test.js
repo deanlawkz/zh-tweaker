@@ -51,14 +51,14 @@ test('C2: битый tweaks.json не роняет запуск', () => {
 
 test('C2: сервер не сохраняет правку, которая падает, и стартует снова', { skip: !hasGame }, async () => {
   const dir = tmp(), game = tmp();
-  const s = await createApp({ vfs, db, gameDir: game, tweakerDir: dir, play: () => {} });
+  const s = await createApp({ vfs, db, gameDir: game, tweakerDir: dir, userDir: dir, play: () => {} });
   await new Promise(res => s.listen(0, '127.0.0.1', res));
   const base = `http://127.0.0.1:${s.address().port}`;
   const res = await fetch(base + '/api/tweaks', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ op: 'raw', block: 'Object:Cmdr_AmericaVehicleHumvee', text: 'garbage' }) });
   const body = await res.json();
   assert.equal(res.status, 200); assert.ok(body.errors.length);
   s.close();
-  const s2 = await createApp({ vfs, db, gameDir: game, tweakerDir: dir, play: () => {} });
+  const s2 = await createApp({ vfs, db, gameDir: game, tweakerDir: dir, userDir: dir, play: () => {} });
   s2.close();
 });
 
@@ -84,10 +84,10 @@ test('I4: чужой файл сохраняется в копию и восст
   const game = tmp(), dir = tmp();
   mkdirSync(join(game, 'Data/English'), { recursive: true });
   writeFileSync(join(game, 'Data/English/generals.csf'), 'USER');
-  await applyOutput(new Map([['Data/English/generals.csf', Buffer.from('OURS')]]), { gameDir: game, tweakerDir: dir });
+  await applyOutput(new Map([['Data/English/generals.csf', Buffer.from('OURS')]]), { gameDir: game, tweakerDir: dir, userDir: dir });
   assert.equal(readFileSync(join(game, 'Data/English/generals.csf'), 'utf8'), 'OURS');
-  await applyOutput(new Map([['Data/English/generals.csf', Buffer.from('OURS2')]]), { gameDir: game, tweakerDir: dir });
-  await resetOutput({ gameDir: game, tweakerDir: dir });
+  await applyOutput(new Map([['Data/English/generals.csf', Buffer.from('OURS2')]]), { gameDir: game, tweakerDir: dir, userDir: dir });
+  await resetOutput({ gameDir: game, tweakerDir: dir, userDir: dir });
   assert.equal(readFileSync(join(game, 'Data/English/generals.csf'), 'utf8'), 'USER');
   assert.ok(!existsSync(join(game, 'Data/English/generals.csf.zht-backup')));
 });
@@ -100,7 +100,7 @@ test('копия модуля получает тег по номеру прав
 
 test('чужой сайт не может вызвать действия сервера', { skip: !hasGame }, async () => {
   let played = false;
-  const s = await createApp({ vfs, db, gameDir: tmp(), tweakerDir: tmp(), play: () => { played = true; } });
+  const s = await createApp({ vfs, db, gameDir: tmp(), tweakerDir: tmp(), userDir: tmp(), play: () => { played = true; } });
   await new Promise(res => s.listen(0, '127.0.0.1', res));
   const res = await fetch(`http://127.0.0.1:${s.address().port}/api/play`, { method: 'POST', headers: { 'content-type': 'text/plain', origin: 'https://evil.example' }, body: '{}' });
   assert.equal(res.status, 403); assert.equal(played, false);
@@ -108,7 +108,7 @@ test('чужой сайт не может вызвать действия сер
 });
 
 test('справочник кнопок способностей и улучшений с картинками', { skip: !hasGame }, async () => {
-  const s = await createApp({ vfs, db, gameDir: tmp(), tweakerDir: tmp(), play: () => {} });
+  const s = await createApp({ vfs, db, gameDir: tmp(), tweakerDir: tmp(), userDir: tmp(), play: () => {} });
   await new Promise(res => s.listen(0, '127.0.0.1', res));
   const list = await (await fetch(`http://127.0.0.1:${s.address().port}/api/buttons?q=paradrop`)).json();
   s.close();

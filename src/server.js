@@ -1,6 +1,7 @@
 // HTTP API and static UI on 127.0.0.1:4170.
 import { NUKE_OCL } from './commander.js';
 import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { join, dirname, extname } from 'node:path';
@@ -13,7 +14,7 @@ import { applyOutput, resetOutput } from './output.js';
 import { iconPng, placeholderPng, iconFromMappedImage } from './icons.js';
 import { labelFor, moduleLabel } from './labels.js';
 import { PREFIX } from './commander.js';
-import { GAME_ZH, GAME_GEN, TWEAKER_DIR } from './paths.js';
+import { GAME_ZH, GAME_GEN, TWEAKER_DIR, USER_DIR } from './paths.js';
 
 const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml' };
@@ -64,12 +65,20 @@ function describe(view, entry) {
   };
 }
 
-export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAKER_DIR, play } = {}) {
+// Original SagePatch.ini (before our edit): the backup if we already changed it.
+function readSagePatch(userDir) {
+  for (const f of [join(userDir, 'SagePatch.ini.zht-backup'), join(userDir, 'SagePatch.ini')]) {
+    try { return readFileSync(f, 'latin1'); } catch {}
+  }
+  return null;
+}
+
+export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAKER_DIR, userDir = USER_DIR, play } = {}) {
   vfs ||= await Vfs.open([GAME_ZH, GAME_GEN]);
   db ||= await loadGameDb(vfs);
   let tweaks = loadTweaks(tweakerDir);
   let out, view;
-  const recompute = () => { out = buildOutput(db, tweaks); view = overlay(db, out.files); };
+  const recompute = () => { out = buildOutput(db, tweaks, { sagePatch: readSagePatch(userDir) }); view = overlay(db, out.files); };
   recompute();
   let nextId = tweaks.reduce((m, t) => Math.max(m, t.id || 0), 0) + 1;
   play ||= () => spawn('open', ['-a', '/Applications/GeneralsXZH.app'], { detached: true, stdio: 'ignore' }).unref();
@@ -163,10 +172,10 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
     'POST /api/apply': async () => {
       recompute();
       if (out.errors.length) return { ok: false, errors: out.errors };
-      const written = await applyOutput(out.files, { gameDir, tweakerDir });
+      const written = await applyOutput(out.files, { gameDir, tweakerDir, userDir });
       return { ok: true, written };
     },
-    'POST /api/reset': async () => ({ ok: true, ...(await resetOutput({ gameDir, tweakerDir })) }),
+    'POST /api/reset': async () => ({ ok: true, ...(await resetOutput({ gameDir, tweakerDir, userDir })) }),
     'POST /api/play': () => { play(); return { ok: true }; },
   };
 

@@ -10,6 +10,7 @@ export const ALL_SCIENCES = 'Upgrade_ZHT_AllSciences';
 export const INI_MAX_LINE = 1028;
 export const NUKE_OBJECT = 'Cmdr_NukeBlast';
 export const NUKE_OCL = 'OCL_Cmdr_NukeBlast';
+export const NUKE_WEAPON = 'Cmdr_NukeBlastWeapon';
 const GEN_PREFIX = /^(AirF|Lazr|SupW|Tank|Infa|Nuke|Chem|Demo|Slth|Boss|AFG)_/;
 export const stripGeneral = n => n.replace(GEN_PREFIX, '');
 const FILE = t => `Data/INI/${t}/ZHT_Commander.ini`;
@@ -51,6 +52,10 @@ function setLine(text, key, value) {
   const eol = text.includes('\r\n') ? '\r\n' : '\n';
   return text.slice(0, nl) + `  ${key} = ${value}${eol}` + text.slice(nl);
 }
+
+// A missile fired without turning to the target leaves sideways and crashes into the ground near it,
+// so the 180° aim fix is only for instant-hit weapons (rifles, machine guns, snipers).
+export const firesProjectile = text => /^[ \t]*ProjectileObject[ \t]*=[ \t]*(?!NONE\b)\w/im.test(text);
 
 export function buildCommander(db, opts = { aimFix: true }) {
   const P = (t, n, k) => db.prop(t, n, k);
@@ -246,7 +251,7 @@ export function buildCommander(db, opts = { aimFix: true }) {
   for (const w of weapons) {
     const e = db.get('Weapon', w);
     let t = blockText(db.files.get(e.file), e.block).replace(/^(\s*Weapon\s+)\S+/, `$1${PREFIX}${w}`);
-    if (opts.aimFix && infantryWeapons.has(w)) t = setLine(t, 'AcceptableAimDelta', '180');
+    if (opts.aimFix && infantryWeapons.has(w) && !firesProjectile(t)) t = setLine(t, 'AcceptableAimDelta', '180');
     out.Weapon.push(t);
   }
   for (const l of locos) {
@@ -263,10 +268,18 @@ export function buildCommander(db, opts = { aimFix: true }) {
       '  KindOf = NO_COLLIDE IMMOBILE UNATTACKABLE', '  VisionRange = 300.0', '  ShroudClearingRange = 300.0',
       '  Body = ActiveBody ModuleTag_01', '    MaxHealth = 1.0', '    InitialHealth = 1.0', '  End',
       '  Behavior = LifetimeUpdate ModuleTag_02', '    MinLifetime = 0', '    MaxLifetime = 0', '  End',
-      blockText(db.files.get(nm.file), nukeDeath).replace(/\r?\n$/, ''),
+      // The silo blast hits everyone in a flat circle, including the Aurora flying over it (80 HP).
+      // Visuals, toppling and push stay; the damage comes from Cmdr_NukeBlastWeapon, enemies and neutrals only.
+      blockText(db.files.get(nm.file), nukeDeath).replace(/\r?\n$/, '')
+        .replace(/^(\s*Blast\d(?:Max|Min)Damage\s*=\s*)[\d.]+/gm, '$10.0'),
       '  Geometry = CYLINDER', '  GeometryIsSmall = Yes', '  GeometryMajorRadius = 7.0', '  GeometryHeight = 60.0', 'End', ''].join(eol));
     out.ObjectCreationList.push([`ObjectCreationList ${NUKE_OCL}`, '  CreateObject', `    ObjectNames = ${NUKE_OBJECT}`,
-      '    Disposition = ON_GROUND_ALIGNED', '  End', 'End', ''].join(eol));
+      '    Disposition = ON_GROUND_ALIGNED', '  End', '  FireWeapon', `    Weapon = ${NUKE_WEAPON}`, '  End', 'End', ''].join(eol));
+    out.Weapon.push([`Weapon ${NUKE_WEAPON}`, '  PrimaryDamage = 3500.0', '  PrimaryDamageRadius = 60.0',
+      '  SecondaryDamage = 300.0', '  SecondaryDamageRadius = 210.0', '  AttackRange = 10.0',
+      '  DamageType = EXPLOSION', '  DeathType = BURNED', '  WeaponSpeed = 99999.0', '  ProjectileObject = NONE',
+      '  RadiusDamageAffects = ENEMIES NEUTRALS', '  DelayBetweenShots = 0', '  ClipSize = 0', '  ClipReloadTime = 0',
+      'End', ''].join(eol));
   }
 
   // 7. Faction, control bar, strings.

@@ -101,3 +101,14 @@ test('Аврора: ядерный взрыв при попадании соби
   assert.match(blockOf(wt, 'Weapon Cmdr_AuroraBombWeapon__AmericaJetAurora'), /ProjectileDetonationOCL = OCL_Cmdr_NukeBlast/);
   assert.match(blockOf(wt, 'Weapon Cmdr_AuroraBombWeapon__AmericaJetAurora'), /ProjectileObject\s*=\s*AuroraBomb\b/);
 });
+
+test('пушка танка на вертолёте: снят предел угла ствола, иначе с высоты цель не взять', { skip: !hasGame }, () => {
+  const o = buildOutput(db, [
+    { id: 1, op: 'weaponSlot', object: 'Cmdr_AirF_AmericaVehicleChinook', slot: 'PRIMARY', weapon: 'OverlordTankGun' },
+    { id: 2, op: 'weaponSlot', object: 'Cmdr_AmericaVehicleHumvee', slot: 'SECONDARY', weapon: 'OverlordTankGun' },
+  ]);
+  assert.deepEqual(o.errors, []);
+  const wt = o.files.get('Data/INI/Weapon/ZHT_Commander.ini');
+  assert.doesNotMatch(blockOf(wt, 'Weapon Cmdr_OverlordTankGun__AirF_AmericaVehicleChinook'), /^\s*M(in|ax)TargetPitch/m);
+  assert.match(blockOf(wt, 'Weapon Cmdr_OverlordTankGun__AmericaVehicleHumvee'), /^\s*MinTargetPitch/m);
+});

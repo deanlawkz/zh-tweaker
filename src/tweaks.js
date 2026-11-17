@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseIni, setProp, setPropAt, removeModule, insertModule, blockText, findModule, findBlock } from './ini.js';
-import { buildCommander, PREFIX, SLOT_LIMIT, INI_MAX_LINE } from './commander.js';
+import { buildCommander, PREFIX, SLOT_LIMIT, INI_MAX_LINE, firesProjectile } from './commander.js';
 import { writeCsf } from './csf.js';
 import { labelFor } from './labels.js';
 import { TWEAKER_DIR } from './paths.js';
@@ -131,7 +131,11 @@ const OPS = {
       const clone = `${PREFIX}${base}__${t.object.slice(PREFIX.length)}`;
       if (!w.locate('Weapon', clone)) {
         let text = src.replace(/^(\s*Weapon\s+)\S+/, `$1${clone}`);
-        if (/\bINFANTRY\b/.test(loc.block.props.find(p => p.key === 'KindOf')?.value || '') && w.aimFix) {
+        const kindOf = loc.block.props.find(p => p.key === 'KindOf')?.value || '';
+        // A ground gun limits barrel pitch (tank: ±15°); from a flying unit every ground target is steeper,
+        // so the order to attack is refused. Aircraft get the clone without the limit.
+        if (/\bAIRCRAFT\b/.test(kindOf)) text = text.replace(/^[ \t]*M(?:in|ax)TargetPitch\b[^\n]*\n/gm, '');
+        if (/\bINFANTRY\b/.test(kindOf) && w.aimFix && !firesProjectile(text)) {
           text = setProp(parseIni(text, 'w'), parseIni(text, 'w').blocks[0], 'AcceptableAimDelta', '180').toString();
         }
         w.append('Weapon', text);

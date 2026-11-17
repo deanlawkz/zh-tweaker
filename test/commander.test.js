@@ -71,6 +71,12 @@ test('пехота получает AcceptableAimDelta 180 только при a
   assert.ok(!/AcceptableAimDelta/.test(wt.slice(i, wt.indexOf('\nEnd', i))));
 });
 
+test('ракеты пехоты не стреляют вбок: поворот 180 только для оружия без снаряда', { skip: !hasGame }, () => {
+  const w = db2.weaponsOf('Cmdr_AmericaInfantryMissileDefender')[0];
+  assert.match(db2.prop('Weapon', w, 'ProjectileObject') || '', /\w/);
+  assert.equal(db2.prop('Weapon', w, 'AcceptableAimDelta'), db.prop('Weapon', w.replace(/^Cmdr_/, ''), 'AcceptableAimDelta'));
+});
+
 test('ванильные записи не изменились', { skip: !hasGame }, () => {
   for (const text of r.files.values()) {
     assert.ok(!/^Object AmericaVehicleHumvee\b/m.test(text));
@@ -105,9 +111,24 @@ test('готовый ядерный взрыв: объект и список с�
   assert.match(ocl, /ObjectCreationList OCL_Cmdr_NukeBlast[\s\S]*ObjectNames\s*=\s*Cmdr_NukeBlast/);
   const blk = obj.slice(obj.indexOf('Object Cmdr_NukeBlast'));
   assert.match(blk, /NeutronMissileSlowDeathBehavior/);
-  assert.match(blk, /Blast6MaxDamage\s*=\s*3500/);
+  assert.match(blk, /Blast6InnerRadius/);
   assert.match(blk, /OCL_NukeRadiationField/);
   assert.match(blk, /LifetimeUpdate/);
+});
+
+test('ядерный взрыв не бьёт по своим: урон наносит оружие только по врагам и нейтральным', { skip: !hasGame }, () => {
+  const obj = r.files.get('Data/INI/Object/ZHT_Commander.ini');
+  const blk = obj.slice(obj.indexOf('Object Cmdr_NukeBlast'), obj.indexOf('\nEnd', obj.indexOf('Object Cmdr_NukeBlast')));
+  for (const m of blk.matchAll(/Blast\d(?:Max|Min)Damage\s*=\s*([\d.]+)/g)) assert.equal(Number(m[1]), 0, m[0]);
+  const ocl = r.files.get('Data/INI/ObjectCreationList/ZHT_Commander.ini');
+  assert.match(ocl, /OCL_Cmdr_NukeBlast[\s\S]*FireWeapon\s+Weapon\s*=\s*Cmdr_NukeBlastWeapon/);
+  const wf = r.files.get('Data/INI/Weapon/ZHT_Commander.ini');
+  const w = wf.slice(wf.indexOf('Weapon Cmdr_NukeBlastWeapon'));
+  assert.match(w, /PrimaryDamage\s*=\s*3500/);
+  assert.match(w, /SecondaryDamageRadius\s*=\s*210/);
+  const affects = w.match(/RadiusDamageAffects\s*=\s*([^\r\n;]+)/)[1];
+  assert.match(affects, /ENEMIES/);
+  assert.doesNotMatch(affects, /ALLIES|SELF/);
 });
 
 test('панель Commander: одна строка Side, и это Commander', { skip: !hasGame }, () => {

@@ -1,0 +1,32 @@
+name: Ошибка / Bug report
+description: Что-то не работает / Something does not work
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Сначала загляните в [инструкцию](https://github.com/deanlawkz/zh-tweaker/blob/main/docs/GUIDE.ru.md): там разобраны частые случаи.
+        Please check the [guide](https://github.com/deanlawkz/zh-tweaker/blob/main/docs/GUIDE.md) first.
+  - type: input
+    id: mac
+    attributes:
+      label: Мак и macOS / Mac model and macOS version
+      placeholder: MacBook Air M2, macOS 26.1
+    validations: { required: true }
+  - type: input
+    id: generalsx
+    attributes:
+      label: Версия GeneralsX и язык игры / GeneralsX version and game language
+      placeholder: 1.0.7, English (Steam)
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes:
+      label: Что сделали и что случилось / What you did and what happened
+    validations: { required: true }
+  - type: textarea
+    id: log
+    attributes:
+      label: Журнал / Log
+      description: Последние строки ~/GeneralsX/zh-tweaker/server.log / Last lines of ~/GeneralsX/zh-tweaker/server.log
+      render: text

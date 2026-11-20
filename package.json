@@ -1,11 +1,31 @@
 {
   "name": "zh-tweaker",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
     "test": "node --test test/"
   },
-  "engines": { "node": ">=22.13" }
+  "engines": {
+    "node": ">=22.13"
+  },
+  "description": "Unit, weapon and camera editor for C&C Generals Zero Hour on macOS (GeneralsX, Apple Silicon)",
+  "keywords": [
+    "generals",
+    "zero-hour",
+    "command-and-conquer",
+    "generalsx",
+    "macos",
+    "apple-silicon",
+    "modding",
+    "tweaker",
+    "trainer"
+  ],
+  "homepage": "https://deanlawkz.github.io/zh-tweaker/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deanlawkz/zh-tweaker.git"
+  },
+  "bugs": "https://github.com/deanlawkz/zh-tweaker/issues"
 }

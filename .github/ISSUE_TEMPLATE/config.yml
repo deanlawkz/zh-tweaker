@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Инструкция и ответы на вопросы
+    url: https://github.com/deanlawkz/zh-tweaker/blob/main/docs/GUIDE.ru.md
+    about: Установка, частые проблемы, удаление
+  - name: Guide and FAQ (English)
+    url: https://github.com/deanlawkz/zh-tweaker/blob/main/docs/GUIDE.md
+    about: Install, common problems, uninstall

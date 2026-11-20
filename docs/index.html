@@ -1,0 +1,60 @@
+---
+layout: null
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZH Tweaker: unit editor for C&C Generals Zero Hour on Mac (GeneralsX)</title>
+<meta name="description" content="Free tool to edit units, buildings, weapons, build lists and camera height in Command & Conquer Generals Zero Hour on macOS (GeneralsX, Apple Silicon). Adds a Commander faction with every unit. One-command install.">
+<meta name="keywords" content="Generals Zero Hour Mac, C&C Generals macOS, GeneralsX, Zero Hour tweaker, Zero Hour trainer, unit editor, camera height, Apple Silicon, Command and Conquer Mac, Генералы Zero Hour Mac">
+<link rel="canonical" href="https://deanlawkz.github.io/zh-tweaker/">
+<link rel="alternate" hreflang="en" href="https://deanlawkz.github.io/zh-tweaker/">
+<link rel="alternate" hreflang="ru" href="https://deanlawkz.github.io/zh-tweaker/ru.html">
+<link rel="alternate" hreflang="x-default" href="https://deanlawkz.github.io/zh-tweaker/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ZH Tweaker: unit editor for C&C Generals Zero Hour on Mac (GeneralsX)">
+<meta property="og:description" content="Free tool to edit units, buildings, weapons, build lists and camera height in Command & Conquer Generals Zero Hour on macOS (GeneralsX, Apple Silicon). Adds a Commander faction with every unit. One-command install.">
+<meta property="og:url" content="https://deanlawkz.github.io/zh-tweaker/">
+<meta property="og:image" content="https://deanlawkz.github.io/zh-tweaker/img/og.png">
+<meta property="og:image:width" content="1280"><meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://deanlawkz.github.io/zh-tweaker/img/og.png">
+<script type="application/ld+json">[{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "ZH Tweaker", "alternateName": ["Generals Zero Hour Mac tweaker", "Zero Hour unit editor for macOS"], "description": "Free tool to edit units, buildings, weapons, build lists and camera height in Command & Conquer Generals Zero Hour on macOS (GeneralsX, Apple Silicon). Adds a Commander faction with every unit. One-command install.", "applicationCategory": "GameApplication", "applicationSubCategory": "Game mod tool", "operatingSystem": "macOS 15+ (Apple Silicon)", "softwareVersion": "0.2.0", "license": "https://opensource.org/licenses/MIT", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "url": "https://deanlawkz.github.io/zh-tweaker/", "downloadUrl": "https://github.com/deanlawkz/zh-tweaker", "codeRepository": "https://github.com/deanlawkz/zh-tweaker", "screenshot": "https://deanlawkz.github.io/zh-tweaker/img/unit-card.png", "inLanguage": ["ru", "en"], "about": {"@type": "VideoGame", "name": "Command & Conquer: Generals – Zero Hour", "publisher": "Electronic Arts"}}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Does ZH Tweaker change the original game files?", "acceptedAnswer": {"@type": "Answer", "text": "No. Game archives (.big) are only read. The tweaker adds separate ZHT_*.ini files that the engine loads on top, and Reset all removes them."}}, {"@type": "Question", "name": "Does it work on Intel Macs?", "acceptedAnswer": {"@type": "Answer", "text": "No. GeneralsX, the macOS port of Zero Hour, supports Apple Silicon only."}}, {"@type": "Question", "name": "Can I play online with my changes?", "acceptedAnswer": {"@type": "Answer", "text": "No, opponents would desync. Press Reset all before online games and Apply again after."}}, {"@type": "Question", "name": "Where do I get the game for Mac?", "acceptedAnswer": {"@type": "Answer", "text": "Install GeneralsX and copy the Zero Hour files from your own Steam or EA copy to ~/GeneralsX/GeneralsZH. The guide explains SteamCMD and other options."}}, {"@type": "Question", "name": "Does it support Contra or The End of Days mods?", "acceptedAnswer": {"@type": "Answer", "text": "Not yet. Only vanilla Zero Hour is supported; mod support is planned."}}, {"@type": "Question", "name": "How do I uninstall it?", "acceptedAnswer": {"@type": "Answer", "text": "Run: curl -fsSL https://raw.githubusercontent.com/deanlawkz/zh-tweaker/main/uninstall.sh | bash"}}]}]</script>
+<style>
+:root{--bg:#0d1013;--p:#161b22;--b:#30363d;--t:#e6edf3;--m:#8b949e;--a:#f5b52e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:17px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:32px 20px 64px}
+nav{display:flex;justify-content:space-between;align-items:center;font-size:15px}nav a{color:var(--m)}
+.logo{font-weight:800;font-size:22px;color:var(--t);text-decoration:none}.logo b{color:var(--a)}
+h1{font-size:clamp(34px,5vw,56px);line-height:1.08;margin:48px 0 16px;letter-spacing:-.02em}
+.lead{font-size:20px;color:#c9d1d9;max-width:760px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0}
+.btn{display:inline-block;padding:12px 22px;border-radius:10px;font-weight:700;text-decoration:none}
+.btn.y{background:var(--a);color:#111}.btn.g{border:1px solid var(--b);color:var(--t)}
+pre{background:var(--p);border:1px solid var(--b);border-radius:10px;padding:16px;overflow:auto;font:14px/1.5 Menlo,monospace}
+ul.f{padding-left:20px}ul.f li{margin:6px 0}
+figure{margin:28px 0}figure img{width:100%;height:auto;border-radius:12px;border:1px solid var(--b)}figcaption{color:var(--m);font-size:14px;margin-top:6px}
+h2{margin-top:48px;font-size:28px}a{color:var(--a)}
+details{background:var(--p);border:1px solid var(--b);border-radius:10px;padding:12px 16px;margin:10px 0}summary{cursor:pointer;font-weight:600}
+footer{color:var(--m);font-size:14px;margin-top:56px;border-top:1px solid var(--b);padding-top:20px}
+</style>
+</head>
+<body><main>
+<nav><a class="logo" href="./">ZH <b>Tweaker</b></a><span><a href="ru.html">Русская версия</a> · <a href="https://github.com/deanlawkz/zh-tweaker">GitHub</a></span></nav>
+<h1>Edit any unit in C&C Generals Zero Hour on Mac</h1>
+<p class="lead">ZH Tweaker is a free browser-based editor for Command &amp; Conquer Generals Zero Hour running natively on Apple Silicon through GeneralsX. No INI files, no Windows, no mod tools.</p>
+<div class="cta"><a class="btn y" href="#install">Install</a><a class="btn g" href="https://github.com/deanlawkz/zh-tweaker">★ GitHub</a><a class="btn g" href="GUIDE.html">Guide</a></div>
+<figure><img src="img/unit-card.png" alt="Unit card with health, speed, cost and build time" loading="lazy" width="1440" height="900"><figcaption>Unit card with health, speed, cost and build time</figcaption></figure>
+<ul class="f"><li><b>Commander faction</b> with every unit, building and general power of USA, China and GLA</li><li>Health, speed, cost, build time, vision, passenger slots, power and income in one click</li><li>Swap weapons, tune damage, range, reload and projectiles</li><li>Make any building build any unit</li><li>Camera height up to 690</li><li>Missile smoke and weapon sounds kept on in big battles</li><li>Change list grouped by unit with undo; vanilla factions and the AI stay untouched</li></ul>
+<h2 id="install">Install</h2>
+<p>Needs an Apple Silicon Mac, macOS 15 or newer, and Zero Hour running through <a href="https://github.com/fbraz3/GeneralsX">GeneralsX</a> with your own copy of the game. Open Terminal and paste:</p>
+<pre><code>curl -fsSL https://raw.githubusercontent.com/deanlawkz/zh-tweaker/main/install.sh | bash</code></pre>
+<p>A ZH Tweaker icon appears in Applications. Node.js is downloaded automatically if missing. Run the same command to update.</p>
+<figure><img src="img/units.png" alt="All Commander units and buildings with game icons" loading="lazy" width="1440" height="900"><figcaption>All Commander units and buildings with game icons</figcaption></figure><figure><img src="img/changes.png" alt="Change list grouped by unit" loading="lazy" width="1440" height="900"><figcaption>Change list grouped by unit</figcaption></figure>
+<h2>FAQ</h2>
+<details><summary>Does ZH Tweaker change the original game files?</summary><p>No. Game archives (.big) are only read. The tweaker adds separate ZHT_*.ini files that the engine loads on top, and Reset all removes them.</p></details><details><summary>Does it work on Intel Macs?</summary><p>No. GeneralsX, the macOS port of Zero Hour, supports Apple Silicon only.</p></details><details><summary>Can I play online with my changes?</summary><p>No, opponents would desync. Press Reset all before online games and Apply again after.</p></details><details><summary>Where do I get the game for Mac?</summary><p>Install GeneralsX and copy the Zero Hour files from your own Steam or EA copy to ~/GeneralsX/GeneralsZH. The guide explains SteamCMD and other options.</p></details><details><summary>Does it support Contra or The End of Days mods?</summary><p>Not yet. Only vanilla Zero Hour is supported; mod support is planned.</p></details><details><summary>How do I uninstall it?</summary><p>Run: curl -fsSL https://raw.githubusercontent.com/deanlawkz/zh-tweaker/main/uninstall.sh | bash</p></details>
+<p><a href="GUIDE.html">Full guide: install, troubleshooting, languages, uninstall</a></p>
+<footer>Unofficial fan project, not affiliated with Electronic Arts. No game files included. Command &amp; Conquer and Generals are trademarks of Electronic Arts Inc. Code: MIT license. <a href="https://github.com/deanlawkz/zh-tweaker">https://github.com/deanlawkz/zh-tweaker</a></footer>
+</main></body></html>

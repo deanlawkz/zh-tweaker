@@ -1,0 +1,26 @@
+# ZH Tweaker
+
+> ZH Tweaker is a free, open-source (MIT) browser-based editor for Command & Conquer: Generals – Zero Hour on macOS. It works with GeneralsX, the native Apple Silicon port of the game. It adds a "Commander" faction that has every unit, building and general power of USA, China and GLA, and lets the player change their stats without editing INI files by hand.
+
+Key facts:
+
+- Platform: macOS 15+ on Apple Silicon (M1 and newer). Intel Macs are not supported because GeneralsX is Apple Silicon only. Not for Windows or Linux.
+- Requires GeneralsX and the player's own legal copy of Zero Hour (Steam or EA). Game data is expected in ~/GeneralsX/GeneralsZH and ~/GeneralsX/Generals. No game files are distributed.
+- Install: `curl -fsSL https://raw.githubusercontent.com/deanlawkz/zh-tweaker/main/install.sh | bash` (no sudo; downloads Node.js 22 from nodejs.org if missing; creates a "ZH Tweaker" app). Uninstall: same URL with uninstall.sh.
+- Runs a local web page at http://127.0.0.1:4170. UI language: Russian.
+- Editable: health, speed, cost, build time, vision, passenger slots, power, income, supply boxes, weapons (damage, range, reload, projectiles), which units each building builds, camera height up to 690, missile trails and sounds in big battles.
+- Safety: game .big archives are only read. Changes are written as separate Data/INI/<Type>/ZHT_*.ini override files plus a generals.csf copy; "Сбросить всё" (Reset all) removes them. Only the Commander faction changes; vanilla factions and AI keep standard rules.
+- Not for online play (desync). Mods (Contra, The End of Days) are planned, not supported yet.
+- Tested with GeneralsX 1.0.7 and the English version of Zero Hour.
+
+## Docs
+
+- [README (English)](https://github.com/deanlawkz/zh-tweaker/blob/main/README.md): overview, install, FAQ
+- [Guide (English)](https://deanlawkz.github.io/zh-tweaker/GUIDE.html): requirements, getting the game files, troubleshooting, languages, online play, updating, uninstall
+- [Инструкция (русский)](https://deanlawkz.github.io/zh-tweaker/GUIDE.ru.html): то же на русском
+- [How overrides work](https://github.com/deanlawkz/zh-tweaker/blob/main/docs/override-mechanism.md)
+
+## Source
+
+- [Repository](https://github.com/deanlawkz/zh-tweaker): plain Node.js, no dependencies; `npm start`, `npm test`
+- [install.sh](https://github.com/deanlawkz/zh-tweaker/blob/main/install.sh), [uninstall.sh](https://github.com/deanlawkz/zh-tweaker/blob/main/uninstall.sh)

@@ -1,0 +1,11 @@
+title: ZH Tweaker
+description: Unit editor for C&C Generals Zero Hour on Mac (GeneralsX, Apple Silicon)
+url: https://deanlawkz.github.io
+baseurl: /zh-tweaker
+theme: jekyll-theme-primer
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+exclude:
+  - superpowers
+  - override-mechanism.md

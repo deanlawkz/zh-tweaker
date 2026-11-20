@@ -1,0 +1,9 @@
+name: Идея / Feature request
+description: Что добавить в твикер / Suggest something for the tweaker
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Что хотите менять или делать / What would you like to change or do
+    validations: { required: true }

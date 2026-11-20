@@ -13,6 +13,7 @@ import { buildOutput, loadTweaks, saveTweaks } from './tweaks.js';
 import { applyOutput, resetOutput } from './output.js';
 import { iconPng, placeholderPng, iconFromMappedImage } from './icons.js';
 import { labelFor, moduleLabel } from './labels.js';
+import { unitStats, unitBuilds, groupChanges } from './stats.js';
 import { PREFIX } from './commander.js';
 import { GAME_ZH, GAME_GEN, TWEAKER_DIR, USER_DIR } from './paths.js';
 
@@ -108,7 +109,8 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
       const base = baseOf(name);
       const weapons = view.weaponsOf(name);
       return { ...describe(view, e), display: db.displayName(base) || base, base, weapons, kind: db.kind(base),
-        weaponInfo: Object.fromEntries(weapons.map(w => [w, weaponSummary(view, w)])) };
+        weaponInfo: Object.fromEntries(weapons.map(w => [w, weaponSummary(view, w)])),
+        stats: unitStats(view, name), builds: unitBuilds(view, db, name) };
     },
     'GET /api/weapon/:name': (q, [name]) => {
       const e = view.get('Weapon', name);
@@ -156,6 +158,7 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
       return out2;
     },
     'GET /api/tweaks': () => tweaks,
+    'GET /api/changes': () => groupChanges(view, db, tweaks),
     'POST /api/tweaks': (q, _p, body) => {
       const t = { ...body, id: nextId++, createdAt: new Date().toISOString() };
       const before = tweaks;

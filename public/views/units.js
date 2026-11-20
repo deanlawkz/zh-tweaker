@@ -43,11 +43,36 @@ export async function openCard(box, name) {
   const misc = other.length ? h('details', { class: 'module' }, h('summary', {}, h('span', { class: 'grow' }, 'Прочие параметры'), h('span', { class: 'cls' }, other.length)),
     h('div', { class: 'rows' }, other.map(p => propRow(owner, p, reload)))) : null;
 
+  const stats = o.stats?.length ? h('div', { class: 'stats' }, o.stats.map(st => statTile(st, reload))) : null;
+  const builds = o.builds?.length ? h('div', { class: 'builds' }, h('div', { class: 'lab' }, 'Строит'),
+    h('div', { class: 'chips' }, o.builds.map(b => h('button', { class: 'chip', title: b.display, onclick: () => { state.selected = b.name; openCard(box, b.name); } },
+      h('img', { src: icon(b.name) }), h('span', {}, b.display))))) : null;
+
   const mods = [...o.modules].sort((a, b) => rank(a) - rank(b)).map(m => moduleBox(name, m, reload, o.weaponInfo));
   fill(box, 
     h('div', { class: 'card-head' }, h('img', { src: icon(name, 'portrait') }),
       h('div', {}, h('h2', {}, o.display), h('div', { class: 'code' }, name))),
-    tools, main, misc, ...mods);
+    stats, builds, tools, main, misc, ...mods);
+}
+
+// One main number: icon, name, editable value. Health also sets the starting health.
+function statTile(st, reload) {
+  const input = h('input', { type: 'number', value: st.value, step: 'any' });
+  const save = async () => {
+    const v = Number(input.value);
+    if (!Number.isFinite(v) || v === st.value) return;
+    const raw = st.scale ? Math.round(v * st.scale) : v;
+    for (const e of st.edits) {
+      const r = await tweak({ op: 'set', ...e, value: String(raw) }, `${st.ru}: ${v}${st.unit ? ' ' + st.unit : ''}. Нажмите «Применить».`);
+      if (r.error) return;
+    }
+    reload();
+  };
+  input.onchange = save;
+  input.onkeydown = ev => { if (ev.key === 'Enter') input.blur(); };
+  return h('label', { class: 'stat', title: st.hint || '' }, h('span', { class: 'sym' }, st.sym),
+    h('span', { class: 'name' }, st.ru, st.hint ? ' ⓘ' : null),
+    h('span', { class: 'val' }, input, st.unit ? h('em', {}, st.unit) : null));
 }
 
 const rank = m => (m.kind === 'WeaponSet' ? 0 : m.label && !/Draw/.test(m.className || '') ? 1 : /Draw/.test(m.className || m.kind) ? 3 : 2);

@@ -19,7 +19,7 @@ import { GAME_ZH, GAME_GEN, TWEAKER_DIR, USER_DIR } from './paths.js';
 
 const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml' };
-const PORT = 4170;
+const PORT = Number(process.env.ZHT_PORT) || 4170;
 
 // Only the tweaker's own page may change things (protects against other sites in the browser).
 function sameOrigin(req) {
@@ -249,6 +249,12 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const { readdirSync } = await import('node:fs');
+  const hasBig = d => { try { return readdirSync(d).some(n => /\.big$/i.test(n)); } catch { return false; } };
+  if (!hasBig(GAME_ZH)) {
+    console.error(`Не найдены файлы Zero Hour (*.big) в ${GAME_ZH}.\nУстановите игру через GeneralsX или укажите папку: ZHT_GAME_ZH=/путь npm start`);
+    process.exit(2);
+  }
   const app = await createApp();
   app.listen(PORT, '127.0.0.1', () => console.log(`ZH Tweaker: http://127.0.0.1:${PORT}`));
 }

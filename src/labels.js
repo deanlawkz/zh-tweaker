@@ -1,4 +1,5 @@
-// Russian labels for common INI fields and modules.
+// Labels for common INI fields and modules (Russian here, English in i18n.js).
+import { getLang, tr } from './i18n.js';
 // Key: "Field" (any owner) or "ModuleClass.Field" (specific module).
 
 const n = (ru, min, max, hint) => ({ ru, type: 'number', min, max, hint });
@@ -112,9 +113,12 @@ export const MODULE_LABELS = {
   WeaponSet: 'Оружие', ArmorSet: 'Броня', Prerequisites: 'Требования для постройки', UnitSpecificSounds: 'Звуки',
 };
 
+// The label text sits in `ru` for historical reasons; it is returned in the current interface language.
+const localize = lab => (lab && getLang() === 'en' ? { ...lab, ru: tr(lab.ru), hint: lab.hint && tr(lab.hint) } : lab);
+
 export function labelFor(moduleClass, key) {
-  if (moduleClass && FIELD_LABELS[`${moduleClass}.${key}`]) return FIELD_LABELS[`${moduleClass}.${key}`];
-  return FIELD_LABELS[key] || null;
+  if (moduleClass && FIELD_LABELS[`${moduleClass}.${key}`]) return localize(FIELD_LABELS[`${moduleClass}.${key}`]);
+  return localize(FIELD_LABELS[key] || null);
 }
 
-export function moduleLabel(classOrKind) { return MODULE_LABELS[classOrKind] || null; }
+export function moduleLabel(classOrKind) { return tr(MODULE_LABELS[classOrKind]) || null; }

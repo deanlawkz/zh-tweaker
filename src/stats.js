@@ -1,11 +1,13 @@
 // Main numbers of a unit card (health, speed, money, energy...) and the change list grouped by unit.
 import { labelFor, moduleLabel } from './labels.js';
 import { PREFIX } from './commander.js';
+import { L, tr } from './i18n.js';
 
 const baseOf = n => (n.startsWith(PREFIX) ? n.slice(PREFIX.length).replace(/__.*$/, '') : n);
 const num = v => { const m = String(v ?? '').match(/-?\d+(\.\d+)?/); return m ? Number(m[0]) : null; };
 const propOf = (node, key) => node?.props.find(p => p.key.toLowerCase() === key.toLowerCase())?.value ?? null;
 const SLOT_RU = { PRIMARY: 'Основное оружие', SECONDARY: 'Дополнительное оружие', TERTIARY: 'Третье оружие' };
+const slotName = s => tr(SLOT_RU[s]) || s;
 
 // Locomotor used for normal movement (the "SET_NORMAL" line, otherwise the first one).
 function mainLocomotor(block) {
@@ -21,7 +23,7 @@ export function unitStats(view, name) {
   const add = (id, ru, sym, raw, edits, extra = {}) => {
     const v = num(raw);
     if (v == null) return;
-    out.push({ id, ru, sym, value: extra.scale ? v / extra.scale : v, edits, ...extra });
+    out.push({ id, ru: tr(ru), sym, value: extra.scale ? v / extra.scale : v, edits, ...extra, unit: tr(extra.unit), hint: tr(extra.hint) });
   };
   const top = (id, ru, sym, key, extra) => add(id, ru, sym, propOf(block, key), [{ ...own, key }], extra);
   const inModule = (id, ru, sym, test, key, extra) => {
@@ -38,7 +40,7 @@ export function unitStats(view, name) {
   if (loco && view.get('Locomotor', loco)) {
     const shared = [...view.index.Object.values()].filter(e => e.block.name.startsWith(PREFIX) && mainLocomotor(e.block) === loco).length;
     add('speed', 'Скорость', '➜', view.prop('Locomotor', loco, 'Speed'), [{ block: `Locomotor:${loco}`, key: 'Speed' }],
-      shared > 1 ? { hint: `Ходовая общая для ${shared} юнитов Commander` } : {});
+      shared > 1 ? { hint: L(`Ходовая общая для ${shared} юнитов Commander`, `Locomotor shared by ${shared} Commander units`) } : {});
   }
   top('cost', 'Цена', '$', 'BuildCost');
   top('buildTime', 'Время постройки', '⏱', 'BuildTime', { unit: 'с' });
@@ -85,7 +87,7 @@ function ownerOf(view, t) {
 }
 const cmdrObjects = view => [...view.index.Object.values()].filter(e => e.block.name.startsWith(PREFIX) && !e.block.name.includes('__'));
 
-const show = v => /^OCL_Cmdr_NukeBlast$/.test(String(v).trim()) ? '☢ ядерный взрыв' : /^none$/i.test(String(v).trim()) ? 'нет' : showNum(v);
+const show = v => /^OCL_Cmdr_NukeBlast$/.test(String(v).trim()) ? L('☢ ядерный взрыв', '☢ nuclear blast') : /^none$/i.test(String(v).trim()) ? L('нет', 'none') : showNum(v);
 const showNum = v => { const n = num(v); return n != null && /^\s*-?[\d.]+%?\s*$/.test(String(v)) ? String(v).trim().replace(/^(-?\d+)\.0+(%?)$/, '$1$2') : String(v); };
 
 function vanillaValue(db, t) {
@@ -99,15 +101,15 @@ function vanillaValue(db, t) {
 function setText(view, db, t) {
   const [type, name] = t.block.split(':');
   let label;
-  if (type === 'Locomotor' && t.key === 'Speed') label = 'Скорость';
-  else if (t.key === 'MaxHealth') label = 'Здоровье';
-  else if (t.key === 'InitialHealth') label = 'Начальное здоровье';
+  if (type === 'Locomotor' && t.key === 'Speed') label = tr('Скорость');
+  else if (t.key === 'MaxHealth') label = tr('Здоровье');
+  else if (t.key === 'InitialHealth') label = tr('Начальное здоровье');
   else {
     const mod = t.module && view.get(type, name)?.block.modules.find(m => m.tag === t.module);
     const cls = mod ? mod.className || mod.kind : null;
     label = labelFor(cls, t.key)?.ru || (cls && moduleLabel(cls) ? `${moduleLabel(cls)}: ${t.key}` : t.key);
   }
-  if (type === 'Weapon') label = `Оружие «${baseOf(name)}»: ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
+  if (type === 'Weapon') label = L(`Оружие «${baseOf(name)}»: ${label.charAt(0).toLowerCase()}${label.slice(1)}`, `Weapon “${baseOf(name)}”: ${label.charAt(0).toLowerCase()}${label.slice(1)}`);
   const from = vanillaValue(db, t);
   return `${label}: ${from != null && show(from) !== show(t.value) ? `${show(from)} → ` : ''}${show(t.value)}`;
 }
@@ -115,26 +117,28 @@ function setText(view, db, t) {
 function describeTweak(view, db, t) {
   const disp = n => db.displayName(baseOf(n)) || baseOf(n);
   switch (t.op) {
-    case 'camera': return `Камера: высота ${t.value}`;
-    case 'aimFix': return `Стрельба изнутри во все стороны: ${t.on ? 'включена' : 'выключена'}`;
-    case 'battleFx': return `Дым и звук в больших боях: ${t.on ? 'включены' : 'выключены'}`;
+    case 'camera': return L(`Камера: высота ${t.value}`, `Camera: height ${t.value}`);
+    case 'aimFix': return L(`Стрельба изнутри во все стороны: ${t.on ? 'включена' : 'выключена'}`, `Firing from inside in all directions: ${t.on ? 'on' : 'off'}`);
+    case 'battleFx': return L(`Дым и звук в больших боях: ${t.on ? 'включены' : 'выключены'}`, `Smoke and sound in big battles: ${t.on ? 'on' : 'off'}`);
     case 'set': return setText(view, db, t);
-    case 'weaponSlot': return `${SLOT_RU[t.slot] || t.slot}: ${t.weapon && t.weapon.toLowerCase() !== 'none' ? baseOf(t.weapon) : 'убрано'}`;
+    case 'weaponSlot': return `${slotName(t.slot)}: ${t.weapon && t.weapon.toLowerCase() !== 'none' ? baseOf(t.weapon) : L('убрано', 'removed')}`;
     case 'commandSlot': {
-      if (t.button == null) return `Кнопка ${t.slot}: убрана`;
-      if (t.button.startsWith('build:')) return `Кнопка ${t.slot}: строит «${disp(t.button.slice(6))}»`;
-      return `Кнопка ${t.slot}: ${view.prop('CommandButton', t.button, 'TextLabel') && db.csf.get(view.prop('CommandButton', t.button, 'TextLabel').toLowerCase())?.replace(/&/g, '') || t.button}`;
+      if (t.button == null) return L(`Кнопка ${t.slot}: убрана`, `Button ${t.slot}: removed`);
+      if (t.button.startsWith('build:')) return L(`Кнопка ${t.slot}: строит «${disp(t.button.slice(6))}»`, `Button ${t.slot}: builds “${disp(t.button.slice(6))}”`);
+      return `${L('Кнопка', 'Button')} ${t.slot}: ${view.prop('CommandButton', t.button, 'TextLabel') && db.csf.get(view.prop('CommandButton', t.button, 'TextLabel').toLowerCase())?.replace(/&/g, '') || t.button}`;
     }
     case 'removeModule': {
       const m = db.get('Object', baseOf(t.block.split(':')[1]))?.block.modules.find(x => x.tag === t.module);
-      return `Удалён модуль «${(m && moduleLabel(m.className || m.kind)) || m?.className || t.module}»`;
+      const what = (m && moduleLabel(m.className || m.kind)) || m?.className || t.module;
+      return L(`Удалён модуль «${what}»`, `Removed module “${what}”`);
     }
     case 'copyModule': {
       const from = t.from.split(':')[1];
       const m = view.get('Object', from)?.block.modules.find(x => x.tag === t.module);
-      return `Добавлен модуль «${(m && moduleLabel(m.className || m.kind)) || m?.className || t.module}» от «${disp(from)}»`;
+      const what = (m && moduleLabel(m.className || m.kind)) || m?.className || t.module;
+      return L(`Добавлен модуль «${what}» от «${disp(from)}»`, `Added module “${what}” from “${disp(from)}”`);
     }
-    case 'raw': return 'Запись изменена вручную (текст целиком)';
+    case 'raw': return L('Запись изменена вручную (текст целиком)', 'Entry edited by hand (full text)');
     default: return t.op;
   }
 }
@@ -146,7 +150,7 @@ export function groupChanges(view, db, tweaks) {
   for (const t of tweaks) {
     const object = ownerOf(view, t);
     const key = object || '';
-    if (!groups.has(key)) groups.set(key, { object, display: object ? db.displayName(baseOf(object)) || baseOf(object) : 'Общие настройки', items: [] });
+    if (!groups.has(key)) groups.set(key, { object, display: object ? db.displayName(baseOf(object)) || baseOf(object) : tr('Общие настройки'), items: [] });
     const g = groups.get(key);
     const hk = t.op === 'set' && /^(Max|Initial)Health$/.test(t.key) ? `${t.block}|${t.module || ''}` : null;
     if (hk && healthItems.has(hk)) {

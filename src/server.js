@@ -16,6 +16,7 @@ import { labelFor, moduleLabel } from './labels.js';
 import { unitStats, unitBuilds, groupChanges } from './stats.js';
 import { PREFIX } from './commander.js';
 import { GAME_ZH, GAME_GEN, TWEAKER_DIR, USER_DIR } from './paths.js';
+import { L, getLang, loadLang, saveLang } from './i18n.js';
 
 const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml' };
@@ -77,6 +78,7 @@ function readSagePatch(userDir) {
 export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAKER_DIR, userDir = USER_DIR, play } = {}) {
   vfs ||= await Vfs.open([GAME_ZH, GAME_GEN]);
   db ||= await loadGameDb(vfs);
+  let savedLang = loadLang(tweakerDir);
   let tweaks = loadTweaks(tweakerDir);
   let out, view;
   const recompute = () => { out = buildOutput(db, tweaks, { sagePatch: readSagePatch(userDir) }); view = overlay(db, out.files); };
@@ -97,6 +99,8 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
   });
 
   const routes = {
+    'GET /api/lang': () => ({ lang: getLang(), saved: !!savedLang }),
+    'POST /api/lang': (q, _p, body) => { savedLang = saveLang(tweakerDir, body.lang); recompute(); return { lang: savedLang }; },
     'GET /api/state': () => ({ tweaks: tweaks.length, errors: out.errors, report: out.report }),
     'GET /api/objects': (q) => {
       const s = (q.get('q') || '').toLowerCase();
@@ -105,7 +109,7 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
     },
     'GET /api/object/:name': (q, [name]) => {
       const e = view.get('Object', name);
-      if (!e) return [404, { error: `Нет объекта ${name}` }];
+      if (!e) return [404, { error: L(`Нет объекта ${name}`, `No object ${name}`) }];
       const base = baseOf(name);
       const weapons = view.weaponsOf(name);
       return { ...describe(view, e), display: db.displayName(base) || base, base, weapons, kind: db.kind(base),
@@ -114,12 +118,12 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
     },
     'GET /api/weapon/:name': (q, [name]) => {
       const e = view.get('Weapon', name);
-      if (!e) return [404, { error: `Нет оружия ${name}` }];
+      if (!e) return [404, { error: L(`Нет оружия ${name}`, `No weapon ${name}`) }];
       return { ...describe(view, e), summary: weaponSummary(view, name), users: view.usersOfWeapon ? [...view.index.Object.keys()].filter(o => view.weaponsOf(o).includes(name)) : [] };
     },
     'GET /api/refs/:type': (q, [type]) => {
       const idx = view.index[type];
-      if (!idx) return [404, { error: `Нет справочника ${type}` }];
+      if (!idx) return [404, { error: L(`Нет справочника ${type}`, `No list ${type}`) }];
       const s = (q.get('q') || '').toLowerCase();
       const out2 = [];
       for (const n of idx.keys()) {
@@ -132,7 +136,7 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
     },
     'GET /api/commandset/:name': (q, [name]) => {
       const e = view.get('CommandSet', name);
-      if (!e) return [404, { error: `Нет набора ${name}` }];
+      if (!e) return [404, { error: L(`Нет набора ${name}`, `No command set ${name}`) }];
       return {
         name, slots: e.block.props.map(p => {
           const object = view.prop('CommandButton', p.value, 'Object');
@@ -163,7 +167,7 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
       const t = { ...body, id: nextId++, createdAt: new Date().toISOString() };
       const before = tweaks;
       tweaks = tweaks.filter(x => !sameTarget(x, t)).concat(t);
-      try { recompute(); } catch (e) { tweaks = before; recompute(); return [400, { error: `Правка не принята: ${e.message}` }]; }
+      try { recompute(); } catch (e) { tweaks = before; recompute(); return [400, { error: L(`Правка не принята: ${e.message}`, `Change rejected: ${e.message}`) }]; }
       saveTweaks(tweaks, tweakerDir);
       return { tweak: t, errors: out.errors };
     },
@@ -197,7 +201,7 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
     const url = new URL(req.url, 'http://x');
     if (req.method !== 'GET' && !sameOrigin(req)) {
       res.writeHead(403, { 'content-type': 'application/json; charset=utf-8' });
-      return res.end(JSON.stringify({ error: 'Запрос с чужой страницы отклонён' }));
+      return res.end(JSON.stringify({ error: L('Запрос с чужой страницы отклонён', 'Request from another site rejected') }));
     }
     try {
       const icon = url.pathname.match(/^\/icon\/([A-Za-z0-9_]+)\/(button|portrait)\.png$/);
@@ -252,7 +256,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { readdirSync } = await import('node:fs');
   const hasBig = d => { try { return readdirSync(d).some(n => /\.big$/i.test(n)); } catch { return false; } };
   if (!hasBig(GAME_ZH)) {
-    console.error(`Не найдены файлы Zero Hour (*.big) в ${GAME_ZH}.\nУстановите игру через GeneralsX или укажите папку: ZHT_GAME_ZH=/путь npm start`);
+    console.error(`Не найдены файлы Zero Hour (*.big) в ${GAME_ZH}.\nУстановите игру через GeneralsX или укажите папку: ZHT_GAME_ZH=/путь npm start\nZero Hour files (*.big) not found in ${GAME_ZH}.\nInstall the game with GeneralsX or set the folder: ZHT_GAME_ZH=/path npm start`);
     process.exit(2);
   }
   const app = await createApp();

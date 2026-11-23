@@ -5,6 +5,7 @@ import { parseIni, setProp, setPropAt, removeModule, insertModule, blockText, fi
 import { buildCommander, PREFIX, SLOT_LIMIT, INI_MAX_LINE, firesProjectile } from './commander.js';
 import { writeCsf } from './csf.js';
 import { labelFor } from './labels.js';
+import { L, getLang } from './i18n.js';
 import { TWEAKER_DIR } from './paths.js';
 
 const TYPE_FILE = t => `Data/INI/${t}/ZHT_Commander.ini`;
@@ -68,21 +69,21 @@ class Work {
 const parseRef = ref => { const i = ref.indexOf(':'); return { type: ref.slice(0, i), name: ref.slice(i + 1) }; };
 
 function mustBeCommander(name) {
-  if (!name.startsWith(PREFIX)) throw new Fail(`«${name}» не из фракции Commander: менять можно только Cmdr_-копии`);
+  if (!name.startsWith(PREFIX)) throw new Fail(L(`«${name}» не из фракции Commander: менять можно только Cmdr_-копии`, `“${name}” is not part of the Commander faction: only Cmdr_ copies can be changed`));
 }
 
 function target(w, ref) {
   const { type, name } = parseRef(ref);
   mustBeCommander(name);
   const loc = w.locate(type, name);
-  if (!loc) throw new Fail(`Нет записи ${type} ${name}`);
+  if (!loc) throw new Fail(L(`Нет записи ${type} ${name}`, `No entry ${type} ${name}`));
   return loc;
 }
 
 const OPS = {
   camera(w, t, out) {
     const v = Number(t.value);
-    if (!Number.isFinite(v) || v < 100 || v > 5000) throw new Fail(`Высота камеры: «${t.value}» вне 100..5000`);
+    if (!Number.isFinite(v) || v < 100 || v > 5000) throw new Fail(L(`Высота камеры: «${t.value}» вне 100..5000`, `Camera height: “${t.value}” is outside 100..5000`));
     out.camera = v;
   },
   aimFix() {},
@@ -92,20 +93,20 @@ const OPS = {
     let owner = loc.block;
     if (t.module) {
       owner = findModule(loc.block, t.module);
-      if (!owner) throw new Fail(`В ${loc.block.name} нет модуля ${t.module}`);
+      if (!owner) throw new Fail(L(`В ${loc.block.name} нет модуля ${t.module}`, `${loc.block.name} has no module ${t.module}`));
     }
     const lab = labelFor(owner.className || owner.kind || null, t.key);
     if (lab?.type === 'number') {
       const v = parseFloat(t.value);
-      if (!Number.isFinite(v)) throw new Fail(`${lab.ru}: «${t.value}» не число`);
-      if ((lab.min != null && v < lab.min) || (lab.max != null && v > lab.max)) throw new Fail(`${lab.ru}: ${v} вне ${lab.min}..${lab.max}`);
+      if (!Number.isFinite(v)) throw new Fail(L(`${lab.ru}: «${t.value}» не число`, `${lab.ru}: “${t.value}” is not a number`));
+      if ((lab.min != null && v < lab.min) || (lab.max != null && v > lab.max)) throw new Fail(L(`${lab.ru}: ${v} вне ${lab.min}..${lab.max}`, `${lab.ru}: ${v} is outside ${lab.min}..${lab.max}`));
     }
     w.edit(loc.path, f => setProp(f, owner, t.key, String(t.value)));
   },
   removeModule(w, t) {
     const loc = target(w, t.block);
     const m = findModule(loc.block, t.module);
-    if (!m) throw new Fail(`В ${loc.block.name} нет модуля ${t.module}`);
+    if (!m) throw new Fail(L(`В ${loc.block.name} нет модуля ${t.module}`, `${loc.block.name} has no module ${t.module}`));
     w.edit(loc.path, f => removeModule(f, loc.block, m));
   },
   copyModule(w, t) {
@@ -114,20 +115,20 @@ const OPS = {
       const v = w.db.get(from.type, from.name);
       return v && { file: w.db.files.get(v.file), block: v.block };
     })();
-    if (!srcLoc) throw new Fail(`Нет записи ${t.from}`);
+    if (!srcLoc) throw new Fail(L(`Нет записи ${t.from}`, `No entry ${t.from}`));
     const m = findModule(srcLoc.block, t.module);
-    if (!m) throw new Fail(`В ${from.name} нет модуля ${t.module}`);
+    if (!m) throw new Fail(L(`В ${from.name} нет модуля ${t.module}`, `${from.name} has no module ${t.module}`));
     const loc = target(w, t.to);
     const text = blockText(srcLoc.file, m).replace(/^(\s*\w+\s*=\s*\w+)\s+\S+/, `$1 ModuleTag_ZHT_C${t.id}`);
     w.edit(loc.path, f => insertModule(f, findBlock(f, loc.block.type, loc.block.name), text));
   },
   weaponSlot(w, t) {
-    if (!SLOTS.includes(t.slot)) throw new Fail(`Неизвестный слот ${t.slot}`);
+    if (!SLOTS.includes(t.slot)) throw new Fail(L(`Неизвестный слот ${t.slot}`, `Unknown slot ${t.slot}`));
     const loc = target(w, `Object:${t.object}`);
     let weapon = t.weapon;
     if (weapon && weapon.toLowerCase() !== 'none') {
       const src = w.source('Weapon', weapon);
-      if (!src) throw new Fail(`Нет оружия ${weapon}`);
+      if (!src) throw new Fail(L(`Нет оружия ${weapon}`, `No weapon ${weapon}`));
       const base = weapon.startsWith(PREFIX) ? weapon.slice(PREFIX.length).replace(/__.*$/, '') : weapon;
       const clone = `${PREFIX}${base}__${t.object.slice(PREFIX.length)}`;
       if (!w.locate('Weapon', clone)) {
@@ -158,9 +159,9 @@ const OPS = {
   commandSlot(w, t) {
     mustBeCommander(t.commandSet);
     const loc = w.locate('CommandSet', t.commandSet);
-    if (!loc) throw new Fail(`Нет набора ${t.commandSet}`);
+    if (!loc) throw new Fail(L(`Нет набора ${t.commandSet}`, `No command set ${t.commandSet}`));
     const slot = Number(t.slot);
-    if (!(slot >= 1 && slot <= SLOT_LIMIT)) throw new Fail(`Слот ${t.slot} вне 1..${SLOT_LIMIT}`);
+    if (!(slot >= 1 && slot <= SLOT_LIMIT)) throw new Fail(L(`Слот ${t.slot} вне 1..${SLOT_LIMIT}`, `Slot ${t.slot} is outside 1..${SLOT_LIMIT}`));
     const existing = loc.block.props.find(p => Number(p.key) === slot);
     if (t.button == null) {
       if (existing) w.edit(loc.path, f => parseIni(f.text.slice(0, existing.start) + f.text.slice(existing.end), f.file));
@@ -168,18 +169,18 @@ const OPS = {
     }
     let button = t.button;
     if (button.startsWith('build:')) button = buildButtonFor(w, button.slice(6));
-    if (!w.exists('CommandButton', button)) throw new Fail(`Нет кнопки ${button}`);
+    if (!w.exists('CommandButton', button)) throw new Fail(L(`Нет кнопки ${button}`, `No button ${button}`));
     w.edit(loc.path, f => setProp(f, findBlock(f, 'CommandSet', t.commandSet), String(slot), button));
   },
   raw(w, t) {
     const loc = target(w, t.block);
     const text = t.text.endsWith('\n') ? t.text : t.text + '\r\n';
     let parsed;
-    try { parsed = parseIni(text, 'raw'); } catch (e) { throw new Fail(`Текст не разобран: ${e.message.replace(/^raw: /, '')}`); }
-    if (parsed.blocks.length !== 1) throw new Fail('Текст должен содержать ровно один блок с End');
+    try { parsed = parseIni(text, 'raw'); } catch (e) { throw new Fail(L(`Текст не разобран: ${e.message.replace(/^raw: /, '')}`, `Could not parse the text: ${e.message.replace(/^raw: /, '')}`)); }
+    if (parsed.blocks.length !== 1) throw new Fail(L('Текст должен содержать ровно один блок с End', 'The text must contain exactly one block ending with End'));
     const b = parsed.blocks[0];
     if (b.type !== loc.block.type || b.name !== loc.block.name) {
-      throw new Fail(`Первая строка должна остаться «${loc.block.type} ${loc.block.name}», а не «${b.type} ${b.name}»`);
+      throw new Fail(L(`Первая строка должна остаться «${loc.block.type} ${loc.block.name}», а не «${b.type} ${b.name}»`, `The first line must stay “${loc.block.type} ${loc.block.name}”, not “${b.type} ${b.name}”`));
     }
     w.edit(loc.path, f => parseIni(f.text.slice(0, loc.block.start) + text + f.text.slice(loc.block.end), f.file));
   },
@@ -187,7 +188,7 @@ const OPS = {
 
 function buildButtonFor(w, obj) {
   mustBeCommander(obj);
-  if (!w.exists('Object', obj)) throw new Fail(`Нет объекта ${obj}`);
+  if (!w.exists('Object', obj)) throw new Fail(L(`Нет объекта ${obj}`, `No object ${obj}`));
   const name = `${PREFIX}Command_Build_${obj.slice(PREFIX.length)}`;
   if (w.exists('CommandButton', name)) return name;
   const base = obj.slice(PREFIX.length);
@@ -207,37 +208,37 @@ function validate(w) {
   const errors = [];
   const err = (block, key, message) => errors.push({ block, key, message });
   for (const [path, f] of w.files) {
-    for (const l of f.text.split(/\r?\n/)) if (l.length >= INI_MAX_LINE) err(path, null, `Строка длиннее ${INI_MAX_LINE} символов`);
+    for (const l of f.text.split(/\r?\n/)) if (l.length >= INI_MAX_LINE) err(path, null, L(`Строка длиннее ${INI_MAX_LINE} символов`, `Line longer than ${INI_MAX_LINE} characters`));
     for (const b of f.blocks) {
       const walk = (node, cls) => {
         for (const p of node.props) {
           const lab = labelFor(cls, p.key);
           if (lab?.type === 'ref' && p.value && !/^none$/i.test(p.value)) {
             const name = p.value.split(/\s+/)[0];
-            if (!w.exists(lab.ref, name)) err(`${b.type} ${b.name}`, p.key, `${lab.ru}: нет записи «${name}»`);
+            if (!w.exists(lab.ref, name)) err(`${b.type} ${b.name}`, p.key, L(`${lab.ru}: нет записи «${name}»`, `${lab.ru}: no entry “${name}”`));
           }
           const kl = p.key.toLowerCase();
           if (kl === 'locomotor') {
-            for (const l of p.value.split(/\s+/).slice(1)) if (l && !w.exists('Locomotor', l)) err(`${b.type} ${b.name}`, p.key, `Ходовая: нет записи «${l}»`);
+            for (const l of p.value.split(/\s+/).slice(1)) if (l && !w.exists('Locomotor', l)) err(`${b.type} ${b.name}`, p.key, L(`Ходовая: нет записи «${l}»`, `Locomotor: no entry “${l}”`));
           }
           if (node.kind?.toLowerCase() === 'prerequisites' && kl === 'object') {
-            for (const o of p.value.split(/\s+/)) if (o && !w.exists('Object', o)) err(`${b.type} ${b.name}`, 'Prerequisites', `Требование для постройки: нет объекта «${o}»`);
+            for (const o of p.value.split(/\s+/)) if (o && !w.exists('Object', o)) err(`${b.type} ${b.name}`, 'Prerequisites', L(`Требование для постройки: нет объекта «${o}»`, `Build requirement: no object “${o}”`));
           }
           for (const tok of p.value.match(/\bCmdr_\w+/g) || []) {
-            if (!REF_TYPES.some(rt => w.exists(rt, tok))) err(`${b.type} ${b.name}`, p.key, `Нет записи «${tok}»`);
+            if (!REF_TYPES.some(rt => w.exists(rt, tok))) err(`${b.type} ${b.name}`, p.key, L(`Нет записи «${tok}»`, `No entry “${tok}”`));
           }
           if (node.kind?.toLowerCase() === 'weaponset' && p.key.toLowerCase() === 'weapon') {
             const wn = p.value.split(/\s+/)[1];
-            if (wn && !/^none$/i.test(wn) && !w.exists('Weapon', wn)) err(`${b.type} ${b.name}`, 'Weapon', `Оружие: нет записи «${wn}»`);
+            if (wn && !/^none$/i.test(wn) && !w.exists('Weapon', wn)) err(`${b.type} ${b.name}`, 'Weapon', L(`Оружие: нет записи «${wn}»`, `Weapon: no entry “${wn}”`));
           }
         }
         for (const m of node.modules) walk(m, m.className || m.kind);
       };
       walk(b, null);
-      if (b.type === 'CommandSet') for (const p of b.props) if (!w.exists('CommandButton', p.value)) err(`CommandSet ${b.name}`, p.key, `Нет кнопки «${p.value}»`);
+      if (b.type === 'CommandSet') for (const p of b.props) if (!w.exists('CommandButton', p.value)) err(`CommandSet ${b.name}`, p.key, L(`Нет кнопки «${p.value}»`, `No button “${p.value}”`));
       if (b.type === 'CommandButton') {
         const o = b.props.find(p => p.key === 'Object')?.value;
-        if (o && !w.exists('Object', o)) err(`CommandButton ${b.name}`, 'Object', `Нет объекта «${o}»`);
+        if (o && !w.exists('Object', o)) err(`CommandButton ${b.name}`, 'Object', L(`Нет объекта «${o}»`, `No object “${o}”`));
       }
     }
   }
@@ -246,12 +247,15 @@ function validate(w) {
 
 // Problems already present in the untouched Commander (vanilla data quirks) are not the user's errors.
 const baselineCache = new WeakMap();
+// Errors already present in plain Commander. Messages depend on the interface language, so cache per language.
 function baselineErrors(db) {
-  if (!baselineCache.has(db)) {
+  if (!baselineCache.has(db)) baselineCache.set(db, {});
+  const byLang = baselineCache.get(db), lang = getLang();
+  if (!byLang[lang]) {
     const w = new Work(db, buildCommander(db, { aimFix: true }).files);
-    baselineCache.set(db, new Set(validate(w).map(e => `${e.block}|${e.key}|${e.message}`)));
+    byLang[lang] = new Set(validate(w).map(e => `${e.block}|${e.key}|${e.message}`));
   }
-  return baselineCache.get(db);
+  return byLang[lang];
 }
 
 // Files under "@user/" go to the GeneralsX settings folder (USER_DIR), not the game folder.
@@ -285,7 +289,7 @@ export function buildOutput(db, tweaks, { sagePatch = null } = {}) {
   const touched = new Map();
   for (const t of tweaks) {
     const op = OPS[t.op];
-    if (!op) { errors.push({ tweakId: t.id, message: `Неизвестная правка ${t.op}` }); continue; }
+    if (!op) { errors.push({ tweakId: t.id, message: L(`Неизвестная правка ${t.op}`, `Unknown change ${t.op}`) }); continue; }
     try {
       op(w, t, out);
       for (const k of [t.block, t.to, t.object && `Object:${t.object}`, t.commandSet && `CommandSet:${t.commandSet}`].filter(Boolean)) {
@@ -293,7 +297,7 @@ export function buildOutput(db, tweaks, { sagePatch = null } = {}) {
       }
       if (t.op === 'weaponSlot' && t.weapon) touched.set(`Object ${t.object}`, t.id);
     } catch (e) {
-      errors.push({ tweakId: t.id, message: e instanceof Fail ? e.message : `Правка не выполнена: ${e.message}` });
+      errors.push({ tweakId: t.id, message: e instanceof Fail ? e.message : L(`Правка не выполнена: ${e.message}`, `Change failed: ${e.message}`) });
     }
   }
   const key = e => `${e.block}|${e.key}|${e.message}`;

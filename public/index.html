@@ -8,21 +8,22 @@
 </head>
 <body>
   <header class="top">
-    <div class="brand">ZH <b>Tweaker</b><span class="sub">Generals Zero Hour · фракция Commander</span></div>
+    <div class="brand">ZH <b>Tweaker</b><span class="sub" data-en="Generals Zero Hour · Commander faction">Generals Zero Hour · фракция Commander</span></div>
     <div class="status" id="status"></div>
     <div class="actions">
-      <button id="btn-apply" class="primary">Применить</button>
-      <button id="btn-reset">Сбросить всё</button>
-      <button id="btn-play" class="play">Играть</button>
+      <button id="btn-apply" class="primary" data-en="Apply">Применить</button>
+      <button id="btn-reset" data-en="Reset all">Сбросить всё</button>
+      <button id="btn-play" class="play" data-en="Play">Играть</button>
+      <button id="btn-lang" class="lang" title="Язык / Language">EN</button>
     </div>
   </header>
   <nav class="tabs" id="tabs">
-    <button data-tab="units" class="on">Юниты и здания</button>
-    <button data-tab="build">Что строят здания</button>
-    <button data-tab="weapons">Оружие</button>
-    <button data-tab="general">Камера и общее</button>
+    <button data-tab="units" class="on" data-en="Units and buildings">Юниты и здания</button>
+    <button data-tab="build" data-en="Build lists">Что строят здания</button>
+    <button data-tab="weapons" data-en="Weapons">Оружие</button>
+    <button data-tab="general" data-en="Camera and general">Камера и общее</button>
     <button data-tab="commander">Commander</button>
-    <button data-tab="changes">Изменения <span id="changes-count"></span></button>
+    <button data-tab="changes"><span data-en="Changes">Изменения</span> <span id="changes-count"></span></button>
   </nav>
   <div id="errors" class="errors" hidden></div>
   <main id="view"></main>

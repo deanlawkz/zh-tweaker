@@ -1,5 +1,6 @@
 // Editable rows for INI props, shared by unit and weapon cards.
 import { h, icon, pickRef, tweak } from '../app.js';
+import { t } from '../i18n.js';
 
 const isBool = v => /^(yes|no)$/i.test(v);
 
@@ -14,12 +15,12 @@ export function propRow(owner, p, onSaved) {
     const cb = h('input', { type: 'checkbox' });
     cb.checked = /^yes$/i.test(p.value);
     cb.onchange = () => save(cb.checked ? 'Yes' : 'No');
-    input = h('label', { class: 'switch' }, cb, cb.checked ? 'Да' : 'Нет');
-    cb.addEventListener('change', () => (input.lastChild.textContent = cb.checked ? 'Да' : 'Нет'));
+    input = h('label', { class: 'switch' }, cb, cb.checked ? t('Да', 'Yes') : t('Нет', 'No'));
+    cb.addEventListener('change', () => (input.lastChild.textContent = cb.checked ? t('Да', 'Yes') : t('Нет', 'No')));
   } else if (lab?.type === 'ref') {
     const name = p.value.split(/\s+/)[0];
     input = h('button', { class: 'refbtn', onclick: async () => { const v = await pickRef(lab.ref, lab.ru); if (v) save(v); } },
-      lab.ref === 'Object' ? h('img', { src: icon(name) }) : null, name || '(нет)', ' ▾');
+      lab.ref === 'Object' ? h('img', { src: icon(name) }) : null, name || t('(нет)', '(none)'), ' ▾');
   } else if (lab?.type === 'enum') {
     const sel = h('select', {}, [...new Set([p.value, ...lab.options])].map(o => h('option', { value: o, selected: o === p.value }, o)));
     sel.onchange = () => save(sel.value);

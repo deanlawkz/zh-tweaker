@@ -1,4 +1,5 @@
 // ZH Tweaker UI shell: API, shared state, modal pickers, tab switching.
+import { t, lang, switchLang } from './i18n.js';
 import { renderUnits } from './views/units.js';
 import { renderBuild } from './views/build.js';
 import { renderWeapons } from './views/weapons.js';
@@ -27,8 +28,10 @@ export const api = {
   async del(p) { const r = await fetch(p, { method: 'DELETE' }); return r.json(); },
 };
 
-export const SIDES = { America: 'США', China: 'Китай', GLA: 'ГЛА', Other: 'Прочее' };
-export const GENERALS = { null: 'Обычные', AirForce: 'ВВС', Laser: 'Лазерный', SuperWeapon: 'Супероружие', Tank: 'Танковый', Infantry: 'Пехотный', Nuke: 'Ядерный', Toxin: 'Токсичный', Demolition: 'Подрывник', Stealth: 'Скрытный', Boss: 'Босс' };
+export const SIDES = { America: t('США', 'USA'), China: t('Китай', 'China'), GLA: t('ГЛА', 'GLA'), Other: t('Прочее', 'Other') };
+export const GENERALS = lang === 'en'
+  ? { null: 'Standard', AirForce: 'Air Force', Laser: 'Laser', SuperWeapon: 'Superweapon', Tank: 'Tank', Infantry: 'Infantry', Nuke: 'Nuke', Toxin: 'Toxin', Demolition: 'Demolition', Stealth: 'Stealth', Boss: 'Boss' }
+  : { null: 'Обычные', AirForce: 'ВВС', Laser: 'Лазерный', SuperWeapon: 'Супероружие', Tank: 'Танковый', Infantry: 'Пехотный', Nuke: 'Ядерный', Toxin: 'Токсичный', Demolition: 'Подрывник', Stealth: 'Скрытный', Boss: 'Босс' };
 export const icon = (name, size = 'button') => `/icon/${encodeURIComponent(name)}/${size}.png`;
 
 export const state = { objects: [], tab: 'units', selected: null };
@@ -43,7 +46,7 @@ export function showErrors(errors) {
   const box = $('#errors');
   if (!errors?.length) { box.hidden = true; return; }
   box.hidden = false;
-  box.replaceChildren(h('b', {}, 'Что мешает применить:'), h('ul', {}, errors.slice(0, 12).map(e =>
+  box.replaceChildren(h('b', {}, t('Что мешает применить:', 'What blocks applying:')), h('ul', {}, errors.slice(0, 12).map(e =>
     h('li', {}, `${e.block ? e.block + (e.key ? ' · ' + e.key : '') + ': ' : ''}${e.message}`))));
 }
 
@@ -51,15 +54,15 @@ export async function refreshStatus() {
   const s = await api.get('/api/state');
   $('#changes-count').textContent = s.tweaks ? `(${s.tweaks})` : '';
   $('#status').replaceChildren(
-    `Правок: ${s.tweaks}. `,
-    s.errors.length ? h('span', { class: 'bad' }, `Ошибок: ${s.errors.length}`) : 'Ошибок нет.');
+    t(`Правок: ${s.tweaks}. `, `Changes: ${s.tweaks}. `),
+    s.errors.length ? h('span', { class: 'bad' }, t(`Ошибок: ${s.errors.length}`, `Errors: ${s.errors.length}`)) : t('Ошибок нет.', 'No errors.'));
   showErrors(s.errors);
   return s;
 }
 
 // Add a tweak; returns server answer. Re-renders status.
-export async function tweak(t, okMsg = 'Сохранено. Нажмите «Применить», чтобы записать в игру.') {
-  const r = await api.post('/api/tweaks', t);
+export async function tweak(tw, okMsg = t('Сохранено. Нажмите «Применить», чтобы записать в игру.', 'Saved. Press Apply to write it to the game.')) {
+  const r = await api.post('/api/tweaks', tw);
   await refreshStatus();
   if (r.error) { toast(r.error, true); return r; }
   const mine = r.errors.filter(e => e.tweakId === r.tweak.id);
@@ -81,7 +84,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 // Upgrade / special power buttons with their game pictures.
 export function pickButton(title) {
   return new Promise(resolve => {
-    const search = h('input', { type: 'text', placeholder: 'Поиск: Paradrop, Carpet, Flash…' });
+    const search = h('input', { type: 'text', placeholder: t('Поиск: Paradrop, Carpet, Flash…', 'Search: Paradrop, Carpet, Flash…') });
     const holder = h('div', { class: 'grid' });
     let timer;
     const draw = async () => {
@@ -98,7 +101,7 @@ export function pickButton(title) {
 // Icon grid of Commander objects; resolves with the chosen object.
 export function pickObject(title, { kind } = {}) {
   return new Promise(resolve => {
-    const search = h('input', { type: 'text', placeholder: 'Поиск по названию' });
+    const search = h('input', { type: 'text', placeholder: t('Поиск по названию', 'Search by name') });
     const holder = h('div');
     const draw = () => {
       const q = search.value.toLowerCase();
@@ -114,7 +117,7 @@ export function pickObject(title, { kind } = {}) {
 // List picker for references (weapons, objects, effects...).
 export function pickRef(type, title) {
   return new Promise(resolve => {
-    const search = h('input', { type: 'text', placeholder: 'Поиск' });
+    const search = h('input', { type: 'text', placeholder: t('Поиск', 'Search') });
     const holder = h('div', { class: 'list' });
     let timer;
     const draw = async () => {
@@ -123,7 +126,7 @@ export function pickRef(type, title) {
         const pic = type === 'Object' ? it.name : type === 'Weapon' && it.users?.[0];
         return h('div', { class: 'item', onclick: () => { closeModal(); resolve(it.name); } },
           pic ? h('img', { src: icon(pic), loading: 'lazy' }) : null,
-          h('div', {}, it.display || it.name, h('br'), h('small', {}, it.name, it.users?.length ? ` · у ${it.users.join(', ')}` : '')));
+          h('div', {}, it.display || it.name, h('br'), h('small', {}, it.name, it.users?.length ? t(` · у ${it.users.join(', ')}`, ` · used by ${it.users.join(', ')}`) : '')));
       }));
     };
     search.oninput = () => { clearTimeout(timer); timer = setTimeout(draw, 200); };
@@ -148,7 +151,7 @@ export function objectGrid(list, onPick, selected) {
         }, h('img', { src: icon(o.name), loading: 'lazy', alt: '' }), h('span', {}, o.display))))));
     }
   }
-  if (!wrap.children.length) wrap.append(h('div', { class: 'empty' }, 'Ничего не найдено'));
+  if (!wrap.children.length) wrap.append(h('div', { class: 'empty' }, t('Ничего не найдено', 'Nothing found')));
   return wrap;
 }
 
@@ -158,25 +161,28 @@ export async function show(tab) {
   state.tab = tab;
   for (const b of document.querySelectorAll('#tabs button')) b.classList.toggle('on', b.dataset.tab === tab);
   const view = $('#view');
-  view.replaceChildren(h('div', { class: 'empty' }, 'Загрузка…'));
-  try { await VIEWS[tab](view); } catch (e) { view.replaceChildren(h('div', { class: 'empty' }, 'Ошибка: ' + e.message)); }
+  view.replaceChildren(h('div', { class: 'empty' }, t('Загрузка…', 'Loading…')));
+  try { await VIEWS[tab](view); } catch (e) { view.replaceChildren(h('div', { class: 'empty' }, t('Ошибка: ', 'Error: ') + e.message)); }
 }
 $('#tabs').onclick = e => { const t = e.target.closest('button')?.dataset.tab; if (t) show(t); };
 
 $('#btn-apply').onclick = async () => {
   const r = await api.post('/api/apply');
   await refreshStatus();
-  if (r.ok) toast(`Записано в игру: ${r.written.length} файлов. Можно играть.`);
-  else if (r.error) toast(`Не применено: ${r.error}`, true);
-  else { showErrors(r.errors); toast('Не применено: есть ошибки (список вверху)', true); }
+  if (r.ok) toast(t(`Записано в игру: ${r.written.length} файлов. Можно играть.`, `Written to the game: ${r.written.length} files. Ready to play.`));
+  else if (r.error) toast(t(`Не применено: ${r.error}`, `Not applied: ${r.error}`), true);
+  else { showErrors(r.errors); toast(t('Не применено: есть ошибки (список вверху)', 'Not applied: there are errors (list at the top)'), true); }
 };
 $('#btn-reset').onclick = async () => {
-  if (!confirm('Убрать все файлы твикера из игры? Игра станет ванильной. Список правок сохранится, его можно применить снова.')) return;
+  if (!confirm(t('Убрать все файлы твикера из игры? Игра станет ванильной. Список правок сохранится, его можно применить снова.', 'Remove all tweaker files from the game? The game becomes vanilla again. Your changes are kept and can be applied again.'))) return;
   const r = await api.post('/api/reset');
   if (r.error) return toast(r.error, true);
-  toast(r.kept?.length ? `Сброшено, но оставлены изменённые вручную: ${r.kept.join(', ')}` : 'Игра снова ванильная.');
+  toast(r.kept?.length ? t(`Сброшено, но оставлены изменённые вручную: ${r.kept.join(', ')}`, `Reset, but files edited by hand were kept: ${r.kept.join(', ')}`) : t('Игра снова ванильная.', 'The game is vanilla again.'));
 };
-$('#btn-play').onclick = async () => { await api.post('/api/play'); toast('Запускаю игру…'); };
+$('#btn-play').onclick = async () => { await api.post('/api/play'); toast(t('Запускаю игру…', 'Starting the game…')); };
+$('#btn-lang').textContent = lang === 'en' ? 'RU' : 'EN';
+$('#btn-lang').onclick = switchLang;
+if (lang === 'en') for (const el of document.querySelectorAll('[data-en]')) el.textContent = el.dataset.en;
 
 state.objects = await api.get('/api/objects');
 await refreshStatus();

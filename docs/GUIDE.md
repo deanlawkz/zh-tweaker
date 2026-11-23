@@ -11,6 +11,7 @@ lang: en
 - [Requirements](#requirements)
 - [Install step by step](#install-step-by-step)
 - [First run](#first-run)
+- [Your own music](#your-own-music)
 - [I don't have the game on my Mac yet](#i-dont-have-the-game-on-my-mac-yet)
 - [Intel Macs](#intel-macs)
 - [The game is in a different folder](#the-game-is-in-a-different-folder)
@@ -66,6 +67,16 @@ The installer puts the program in `~/Library/Application Support/ZH Tweaker/app`
 The **Changes** tab lists every change by unit as "old → new"; any of them can be undone. Changes affect only Commander: other factions and AI opponents keep the standard rules.
 
 The interface is in English and Russian. It follows your browser language on first run; the EN/RU button at the top right switches it.
+
+## Your own music
+
+On the **Music** tab pick a folder for the main menu, Commander, USA, China or GLA, then press **Apply**.
+
+- Formats: mp3, wav, m4a, flac, ogg. Tracks play in file-name order.
+- GeneralsX on Mac loops a single track and never moves to the next one, so the tweaker joins the folder into one track of up to 30 minutes. This needs ffmpeg (`brew install ffmpeg`); without it only the first mp3 or wav of the folder plays.
+- USA, China and GLA music changes for all their generals, including AI players; you hear the music of the side you play.
+- Commander plays its loading-screen music for the whole match. Without a Commander folder it uses the USA music.
+- The first Apply after choosing a folder takes up to a minute. Your music files are never changed; the joined copy goes into the game folder and **Reset all** removes it.
 
 ## I don't have the game on my Mac yet
 

@@ -13,6 +13,7 @@
 - Swap **weapons**, tune damage, range, reload and projectiles.
 - Make **any building build any unit**.
 - **Camera height up to 690** to see the whole battlefield.
+- **Your own music**: pick a folder for the main menu, Commander, USA, China and GLA.
 - Fixes for big battles: missile smoke trails and weapon sounds stay on.
 - A readable change list grouped by unit ("240 → 24000"), with undo for each change.
 - Real game icons everywhere. Vanilla factions and the AI are not changed.
@@ -36,6 +37,8 @@ A **ZH Tweaker** icon appears in Applications. Node.js is downloaded automatical
 ![All units and buildings with game icons](docs/img/units.png)
 
 ![Change list grouped by unit](docs/img/changes.png)
+
+![Your own music for the menu and each side](docs/img/music.png)
 
 The interface is in English and Russian (switch with the EN/RU button). It picks your browser language on first run.
 

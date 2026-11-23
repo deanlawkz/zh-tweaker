@@ -17,6 +17,7 @@ import { unitStats, unitBuilds, groupChanges } from './stats.js';
 import { PREFIX } from './commander.js';
 import { GAME_ZH, GAME_GEN, TWEAKER_DIR, USER_DIR } from './paths.js';
 import { L, getLang, loadLang, saveLang } from './i18n.js';
+import { MUSIC_SLOTS, audioFiles, checkFolder, findFfmpeg, musicPath, pickFolder, pruneCache, renderFolder } from './music.js';
 
 const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml' };
@@ -91,7 +92,8 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
     (a.op === 'set' && a.block === b.block && (a.module || '') === (b.module || '') && a.key === b.key) ||
     (a.op === 'weaponSlot' && a.object === b.object && a.slot === b.slot) ||
     (a.op === 'commandSlot' && a.commandSet === b.commandSet && +a.slot === +b.slot) ||
-    (a.op === 'raw' && a.block === b.block));
+    (a.op === 'raw' && a.block === b.block) ||
+    (a.op === 'music' && a.slot === b.slot));
 
   const objectsList = () => [...view.index.Object.keys()].filter(n => n.startsWith(PREFIX) && !n.includes('__')).map(n => {
     const base = baseOf(n);
@@ -179,10 +181,31 @@ export async function createApp({ vfs, db, gameDir = GAME_ZH, tweakerDir = TWEAK
     'POST /api/apply': async () => {
       recompute();
       if (out.errors.length) return { ok: false, errors: out.errors };
-      const written = await applyOutput(out.files, { gameDir, tweakerDir, userDir });
-      return { ok: true, written };
+      const files = new Map(out.files);
+      const notes = [], used = [], cache = join(tweakerDir, 'music-cache');
+      for (const [slot, folder] of Object.entries(out.music || {})) {
+        try {
+          const r = await renderFolder(folder, cache);
+          files.set(musicPath(slot), r.buffer);
+          if (r.file) used.push(r.file);
+          if (r.note) notes.push(r.note);
+        } catch (e) { return { ok: false, error: L(`Музыка: ${e.message}`, `Music: ${e.message}`) }; }
+      }
+      const written = await applyOutput(files, { gameDir, tweakerDir, userDir });
+      pruneCache(cache, used);
+      return { ok: true, written, notes };
     },
     'POST /api/reset': async () => ({ ok: true, ...(await resetOutput({ gameDir, tweakerDir, userDir })) }),
+    'GET /api/music': () => {
+      const set = {};
+      for (const t of tweaks) if (t.op === 'music') set[t.slot] = t.folder || null;
+      return { ffmpeg: !!findFfmpeg(), slots: Object.keys(MUSIC_SLOTS).map(slot => {
+        const folder = set[slot] || null;
+        const error = folder ? checkFolder(folder) : null;
+        return { slot, folder, error, tracks: folder && !error ? audioFiles(folder).length : 0 };
+      }) };
+    },
+    'POST /api/pick-folder': async (q, _p, body) => ({ folder: await pickFolder(body.prompt || L('Папка с музыкой', 'Music folder')) }),
     'POST /api/play': () => { play(); return { ok: true }; },
   };
 

@@ -138,6 +138,11 @@ function describeTweak(view, db, t) {
       const what = (m && moduleLabel(m.className || m.kind)) || m?.className || t.module;
       return L(`Добавлен модуль «${what}» от «${disp(from)}»`, `Added module “${what}” from “${disp(from)}”`);
     }
+    case 'music': {
+      const names = { shell: L('главное меню', 'main menu'), commander: 'Commander', usa: L('США', 'USA'), china: L('Китай', 'China'), gla: L('ГЛА', 'GLA') };
+      return t.folder ? L(`Музыка (${names[t.slot] || t.slot}): папка ${t.folder}`, `Music (${names[t.slot] || t.slot}): folder ${t.folder}`)
+        : L(`Музыка (${names[t.slot] || t.slot}): стандартная`, `Music (${names[t.slot] || t.slot}): game default`);
+    }
     case 'raw': return L('Запись изменена вручную (текст целиком)', 'Entry edited by hand (full text)');
     default: return t.op;
   }

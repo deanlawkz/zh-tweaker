@@ -6,6 +6,7 @@ import { buildCommander, PREFIX, SLOT_LIMIT, INI_MAX_LINE, firesProjectile } fro
 import { writeCsf } from './csf.js';
 import { labelFor } from './labels.js';
 import { L, getLang } from './i18n.js';
+import { MUSIC_SLOTS, MUSIC_INI, checkFolder, musicSettings, musicIni } from './music.js';
 import { TWEAKER_DIR } from './paths.js';
 
 const TYPE_FILE = t => `Data/INI/${t}/ZHT_Commander.ini`;
@@ -88,6 +89,11 @@ const OPS = {
   },
   aimFix() {},
   battleFx() {},
+  music(w, t) {
+    if (!MUSIC_SLOTS[t.slot]) throw new Fail(L(`Неизвестный слот музыки ${t.slot}`, `Unknown music slot ${t.slot}`));
+    const bad = t.folder && checkFolder(t.folder);
+    if (bad) throw new Fail(bad);
+  },
   set(w, t) {
     const loc = target(w, t.block);
     let owner = loc.block;
@@ -312,5 +318,15 @@ export function buildOutput(db, tweaks, { sagePatch = null } = {}) {
   const fxT = [...tweaks].reverse().find(t => t.op === 'battleFx');
   if (fxT ? fxT.on : true) files.set(GAMELOD_FILE, BATTLE_FX_LOD);
   if (db.csfRaw) files.set(CSF_FILE, writeCsf(db.csfRaw, cmd.csfAdd));
-  return { files, errors, report: cmd.report };
+  const music = musicSettings(tweaks);
+  for (const slot of Object.keys(music)) if (checkFolder(music[slot])) delete music[slot];
+  if (Object.keys(music).length) files.set(MUSIC_INI, musicIni(music));
+  if (music.commander) {
+    for (const [p, text] of files) {
+      if (typeof text === 'string' && /^\s*PlayerTemplate\s+FactionCommander\b/m.test(text)) {
+        files.set(p, text.replace(/(PlayerTemplate\s+FactionCommander\b[\s\S]*?^\s*LoadScreenMusic\s*=\s*)\S+/m, '$1ZHT_Commander'));
+      }
+    }
+  }
+  return { files, errors, report: cmd.report, music };
 }

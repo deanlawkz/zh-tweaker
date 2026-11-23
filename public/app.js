@@ -6,6 +6,7 @@ import { renderWeapons } from './views/weapons.js';
 import { renderGeneral } from './views/general.js';
 import { renderCommander } from './views/commander.js';
 import { renderChanges } from './views/changes.js';
+import { renderMusic } from './views/music.js';
 
 export const $ = (s, el = document) => el.querySelector(s);
 export const h = (tag, attrs = {}, ...kids) => {
@@ -156,7 +157,7 @@ export function objectGrid(list, onPick, selected) {
 }
 
 // ---------- tabs ----------
-const VIEWS = { units: renderUnits, build: renderBuild, weapons: renderWeapons, general: renderGeneral, commander: renderCommander, changes: renderChanges };
+const VIEWS = { units: renderUnits, build: renderBuild, weapons: renderWeapons, general: renderGeneral, commander: renderCommander, music: renderMusic, changes: renderChanges };
 export async function show(tab) {
   state.tab = tab;
   for (const b of document.querySelectorAll('#tabs button')) b.classList.toggle('on', b.dataset.tab === tab);
@@ -167,9 +168,11 @@ export async function show(tab) {
 $('#tabs').onclick = e => { const t = e.target.closest('button')?.dataset.tab; if (t) show(t); };
 
 $('#btn-apply').onclick = async () => {
-  const r = await api.post('/api/apply');
+  const btn = $('#btn-apply');
+  btn.disabled = true; toast(t('Применяю…', 'Applying…'));
+  const r = await api.post('/api/apply').finally(() => { btn.disabled = false; });
   await refreshStatus();
-  if (r.ok) toast(t(`Записано в игру: ${r.written.length} файлов. Можно играть.`, `Written to the game: ${r.written.length} files. Ready to play.`));
+  if (r.ok) toast(t(`Записано в игру: ${r.written.length} файлов. Можно играть.`, `Written to the game: ${r.written.length} files. Ready to play.`) + (r.notes?.length ? ' ' + r.notes.join(' ') : ''));
   else if (r.error) toast(t(`Не применено: ${r.error}`, `Not applied: ${r.error}`), true);
   else { showErrors(r.errors); toast(t('Не применено: есть ошибки (список вверху)', 'Not applied: there are errors (list at the top)'), true); }
 };

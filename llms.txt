@@ -7,7 +7,7 @@ Key facts:
 - Platform: macOS 15+ on Apple Silicon (M1 and newer). Intel Macs are not supported because GeneralsX is Apple Silicon only. Not for Windows or Linux.
 - Requires GeneralsX and the player's own legal copy of Zero Hour (Steam or EA). Game data is expected in ~/GeneralsX/GeneralsZH and ~/GeneralsX/Generals. No game files are distributed.
 - Install: `curl -fsSL https://raw.githubusercontent.com/deanlawkz/zh-tweaker/main/install.sh | bash` (no sudo; downloads Node.js 22 from nodejs.org if missing; creates a "ZH Tweaker" app). Uninstall: same URL with uninstall.sh.
-- Runs a local web page at http://127.0.0.1:4170. UI language: Russian.
+- Runs a local web page at http://127.0.0.1:4170. UI languages: English and Russian (EN/RU switch, browser language on first run).
 - Editable: health, speed, cost, build time, vision, passenger slots, power, income, supply boxes, weapons (damage, range, reload, projectiles), which units each building builds, camera height up to 690, missile trails and sounds in big battles.
 - Safety: game .big archives are only read. Changes are written as separate Data/INI/<Type>/ZHT_*.ini override files plus a generals.csf copy; "Сбросить всё" (Reset all) removes them. Only the Commander faction changes; vanilla factions and AI keep standard rules.
 - Not for online play (desync). Mods (Contra, The End of Days) are planned, not supported yet.

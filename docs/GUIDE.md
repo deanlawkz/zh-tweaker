@@ -48,7 +48,7 @@ lang: en
    curl -fsSL https://raw.githubusercontent.com/deanlawkz/zh-tweaker/main/install.sh | bash
    ```
 
-4. Wait for "Готово" ("Done"). Without Node.js the installer downloads about 50 MB.
+4. Wait for "Готово" ("Done"); the installer prints Russian messages. Without Node.js the installer downloads about 50 MB.
 5. A **ZH Tweaker** icon appears in Applications.
 
 The installer puts the program in `~/Library/Application Support/ZH Tweaker/app`. If no suitable Node.js is found it downloads the official build from nodejs.org, verifies the checksum and keeps it in `~/Library/Application Support/ZH Tweaker/node` without touching your system. The icon goes to `/Applications`, or `~/Applications` if that folder is not writable.
@@ -58,14 +58,14 @@ The installer puts the program in `~/Library/Application Support/ZH Tweaker/app`
 1. Open **ZH Tweaker**. Your browser opens http://127.0.0.1:4170. The page runs only on your Mac.
 2. Pick a unit or building. The top of the card shows the key numbers: health, speed, cost, build time, vision, passenger slots, power, income. Click a number, type a new one, press Enter.
 3. Below are all other fields with plain labels, plus "take from another unit" (copy an ability) and "full text" for advanced edits.
-4. **Что строят здания** (build lists): add any unit to any building.
-5. **Оружие** (weapons): damage, range, reload, projectiles.
-6. **Камера и общее** (camera and general): camera height up to 690, passengers firing in all directions, missile smoke and sound in big battles.
-7. Press **Применить** (Apply), then **Играть** (Play). Pick the **Commander** faction in the skirmish lobby.
+4. **Build lists**: add any unit to any building.
+5. **Weapons**: damage, range, reload, projectiles.
+6. **Camera and general**: camera height up to 690, passengers firing in all directions, missile smoke and sound in big battles.
+7. Press **Apply**, then **Play**. Pick the **Commander** faction in the skirmish lobby.
 
-The **Изменения** (changes) tab lists every change by unit as "old → new"; any of them can be undone. Changes affect only Commander: other factions and AI opponents keep the standard rules.
+The **Changes** tab lists every change by unit as "old → new"; any of them can be undone. Changes affect only Commander: other factions and AI opponents keep the standard rules.
 
-The interface is in Russian. Browser translation (right-click → Translate) works well enough.
+The interface is in English and Russian. It follows your browser language on first run; the EN/RU button at the top right switches it.
 
 ## I don't have the game on my Mac yet
 
@@ -111,7 +111,7 @@ If `node` is not found, use `../node/bin/node`. Then open http://127.0.0.1:4170 
 ## The app does not open or says it failed to start
 
 1. Read the dialog: it shows the last lines of the log. The full log is `~/GeneralsX/zh-tweaker/server.log`.
-2. **"Не найдены файлы Zero Hour"** (Zero Hour files not found): see [The game is in a different folder](#the-game-is-in-a-different-folder).
+2. **"Zero Hour files not found"**: see [The game is in a different folder](#the-game-is-in-a-different-folder).
 3. **Port 4170 is busy**. Find out who uses it:
 
    ```bash
@@ -129,7 +129,7 @@ If `node` is not found, use `../node/bin/node`. Then open http://127.0.0.1:4170 
 
 ## The game crashes after Apply
 
-1. Open the tweaker and press **Сбросить всё** (Reset all). It removes every tweaker file from the game and restores the camera.
+1. Open the tweaker and press **Reset all**. It removes every tweaker file from the game and restores the camera.
 2. If the tweaker does not open, run the [uninstall](#uninstall) command: it also cleans the game.
 3. Re-enable changes in small groups to find the one that breaks the game. Huge numbers and manual "full text" edits are the usual suspects.
 4. [Report it](#reporting-a-bug).

@@ -30,14 +30,14 @@ A **ZH Tweaker** icon appears in Applications. Node.js is downloaded automatical
 ## Use
 
 1. Open **ZH Tweaker** (it opens http://127.0.0.1:4170).
-2. Change what you want, press **Применить** (Apply), then **Играть** (Play).
+2. Change what you want, press **Apply**, then **Play**.
 3. Pick **Commander** in the skirmish lobby.
 
 ![All units and buildings with game icons](docs/img/units.png)
 
 ![Change list grouped by unit](docs/img/changes.png)
 
-The interface is in Russian; browser translation works fine.
+The interface is in English and Russian (switch with the EN/RU button). It picks your browser language on first run.
 
 ## FAQ
 
